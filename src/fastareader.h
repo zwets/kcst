@@ -20,8 +20,20 @@
 
 #include <iostream>
 #include <string>
-#include "sequence.h"
+#include <vector>
 
+
+// Represents a single sequence.
+//
+struct sequence {
+    std::string id;         // whatever is between '>' and the first space
+    std::string header;     // the full header (defline) of the sequence
+    std::string data;       // the sequence data
+};
+
+
+// Reads sequences off a stream, validating structure but not content.
+//
 class fasta_reader {
 
     private:
