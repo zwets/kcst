@@ -27,7 +27,7 @@
 
 static const int BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T, X, X, X, X, X, X };
 
-const int MAX_KSIZE = 8 * sizeof(int) - 1;
+const int MAX_KSIZE = 4 * sizeof(int) - 1;
 
 kmeriser::kmeriser(const char *begin, const char *end, int ksize)
     : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)

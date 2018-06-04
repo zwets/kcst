@@ -19,7 +19,7 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-const int MAX_KSIZE = 8 * sizeof(int) - 1;
+const int MAX_KSIZE = 4 * sizeof(int) - 1;
 
 kmerator::kmerator(const char *begin, const char *end, int ksize)
     : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
