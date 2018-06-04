@@ -20,7 +20,7 @@
 
 #include <vector>
 
-// generates the sequence of bases for a single character, until !inc()
+// Generates the base(s) for a single character, e.g. y -> c t = 1 3.
 //
 class baserator
 {
@@ -29,36 +29,42 @@ class baserator
         int pos_;
 
     public:
+        baserator(char c) { set(c); }
         void set(char c);
         bool inc();
         int val() const { return vals_[pos_]; }
 };
 
-// generates (possibly multiple) kmers from a ksize sequence, terminating -1
+// Generates all kmers for the sequence between begin and end.
+// Takes into account letters coding for multiple bases, and generates
+// all kmers for these.  E.g. 2mers for aaw -> 0 
 //
 class kmerator
 {
     private:
+        const char* pcur_;
+        const char* pend_;
+        int ksize_;
         std::vector<baserator> baserators_;
 
     public:
-        kmerator(int k);
-        void set(const char*);
+        kmerator(const char* begin, const char* end, int ksize);
         bool inc();
         int val() const;
 };
 
-// generates all kmers from a vector of characters, terminating with -1
+// Generates all kmers for the sequence between begin and end.
+// Accepts only the proper base letters: a, c, g, t.
 //
-class kmeriser 
+class kmeriser
 {
     private:
         const char* pcur_;
         const char* pend_;
-        kmerator kmerator_;
+        int ksize_;
 
     public:
-        kmeriser(const char *begin, const char *end, int ksize);
+        kmeriser(const char* begin, const char* end, int ksize);
         bool inc();
         int val() const;
 };

@@ -1,4 +1,4 @@
-/* test-kmerator.cpp
+/* test-kmeriser.cpp
  * 
  * Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
  *
@@ -19,33 +19,44 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstring>
+#include <cstdlib>
 
 #include "kmeriser.h"
 
 int main(int argc, char* argv[])
 {
-    char* samples[] = { "aaaa", "nnnn", "acwt", 0 };
-    char** ss = argc > 1 ? argv+1 : samples;
-    const char *b;
+    char *s = "acgtacgtacgtacgt";
+    int k = 5;
+
+    if (argc > 2)
+    {
+        k = std::atoi(argv[1]);
+        s = argv[2];
+    }
+    else if (argc > 1)
+    {
+        s = argv[1];
+    }
 
     try {
-        while ((b = *ss++))
+        int l = strlen(s);
+        const char *e = s + l;
+
+        if (k < 0 || k > l)
         {
-            const char *e = b + std::strlen(b);
-            int k = std::strlen(b);
-            if (k > 2)
-                k = k - 2;
-            kmerator r(b, e, k);
-
-            std::cout << "string: " << b << std::endl;
-            std::cout << "kmers:";
-
-            do {
-                std::cout << ' ' << r.val();
-            } while (r.inc());
-            
-            std::cout << std::endl << std::endl;
+            k = l/2;
         }
+
+        kmeriser r(s, e, k);
+
+        std::cout << "string: " << s << std::endl;
+        std::cout << "kmers:";
+
+        do {
+            std::cout << ' ' << r.val();
+        } while (r.inc());
+            
+        std::cout << std::endl << std::endl;
     }
     catch (std::runtime_error e) {
         std::cerr << "ERROR: " << e.what() << std::endl;

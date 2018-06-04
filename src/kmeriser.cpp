@@ -17,45 +17,59 @@
  */
 
 #include "kmeriser.h"
-#include "utils.cpp"
+#include "utils.h"
+
+#define A 0
+#define C 1
+#define G 2
+#define T 3
+#define X -1
+
+static const int BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T, X, X, X, X, X, X };
 
 const int MAX_KSIZE = 8 * sizeof(int) - 1;
 
-kmeriser::kmeriser(const char *begin, size_t len, int ksize)
-    : pcur_(begin), pend_(begin + len - ksize + 1), kmerator_(ksize)
+kmeriser::kmeriser(const char *begin, const char *end, int ksize)
+    : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
 {
-    if (ksize > MAX_KSIZE)
-        raise_error("kmer size too large: %d (max is %d)", ksize, MAX_KSIZE);
-
-    if (pcur_ < pend_)
-        kmerator_.point_at(pcur_);
+    if (ksize < 1 || ksize > MAX_KSIZE)
+        raise_error("invalid kmer size: %d; must be in range [1,%d]", ksize, MAX_KSIZE);
 }
 
-int
+bool
 kmeriser::inc()
 {
-    if (pcur_ < pend_)
-        if (!kmerator_.inc())
-            if (++pcur_ < pend_)
-            {
-                kmerator_.point_at(pcur_);
-                return true;
-            }
-            else
-                return false;
-        else
-            return true;
-    else
-        return false;
+    return ++pcur_ < pend_;
 }
 
 int
 kmeriser::val() const
 {
-    if (pcur_ < pend_)
-        return kmerator_.val();
-    else
-        raise_error("kmeriser read attempted past right bound");
+    int res = 0;
+
+    if (!(pcur_ < pend_))
+        raise_error("kmeriser read attempted past right bound of sequence");
+
+    for (int i = 0; i < ksize_; ++i)
+    {
+        int c = pcur_[i];
+
+        int o = c - 'a';
+        if (o < 0 || o > 19)        // between 'a' (0) and 't' (19)
+        {
+            o = c - 'A';            // try between 'A' and 'T'
+            if (o < 0 || o > 19)
+                raise_error("invalid base: %c; must be one of [acgtACGT]", c);
+        }
+
+        int v = BASE_VALUES[o];
+        if (v == X)
+            raise_error("invalid base: %c; must be one of [acgtACGT]", c);
+
+        res = res<<2 | v;
+    }
+
+    return res;
 }
 
 // vim: sts=4:sw=4:ai:si:et

@@ -17,35 +17,53 @@
  */
 
 #include "kmeriser.h"
+#include "utils.h"
 
-kmerator::kmerator(int ksize)
-{
-    for (int i = 0; i < ksize; ++i)
-        baserators_.push_back(baserator());
-}
+const int MAX_KSIZE = 8 * sizeof(int) - 1;
 
-void
-kmerator::set(const char *p)
+kmerator::kmerator(const char *begin, const char *end, int ksize)
+    : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
 {
-    for (std::vector<baserator>::iterator b = baserators_.begin(); b != baserators_.end(); ++b) 
-        b->set(*p++);
+    if (ksize < 1 || ksize > MAX_KSIZE)
+        raise_error("invalid kmer size: %d; must be in range [1,%d]", ksize, MAX_KSIZE);
+
+    if (pcur_ < pend_)
+        for (int i = 0; i < ksize; ++i)
+            baserators_.push_back(baserator(pcur_[i]));
 }
 
 bool
 kmerator::inc()
 {
+    bool done = false;
+
     std::vector<baserator>::iterator p = baserators_.end();
 
-    while (--p != baserators_.begin() && !p->inc())
-        /* carry the inc across the baserators */;
+    while (!done && p-- != baserators_.begin())
+        done = p->inc();
 
-    return p != baserators_.begin() || p->inc();
+    // if not done now, p is before begin, and we shift right
+
+    if (!done && (done = ++pcur_ < pend_))
+    {
+        p = baserators_.begin();
+
+        while (++p < baserators_.end())
+            *(p-1) = *p;
+
+        *(p-1) = pcur_[ksize_-1];
+    }
+
+    return done;
 }
 
 int
 kmerator::val() const
 {
     int res = 0;
+
+    if (!(pcur_ < pend_))
+        raise_error("kmerator read attempted past right bound of sequence");
 
     for (std::vector<baserator>::const_iterator p = baserators_.begin(); p != baserators_.end(); ++p)
         res = (res<<2) | p->val();
