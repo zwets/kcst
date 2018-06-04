@@ -13,16 +13,20 @@ by counting hits by the kmers in the query sequence on kmers in the index.
 
 ## Running
 
-```bash
-# No argument handling yet (WIP)
-./kcst [OPTIONS] DBFILE <QUERYFILE
-```
+    ```bash
+    # No argument handling yet (WIP)
+    ./kcst [OPTIONS] DBFILE <QUERYFILE
+    ```
 
 ## Building
 
-```bash
-g++ -o kcst *.cpp
-```
+    ```bash
+    cd src
+    make
+    cd test
+    make
+    make test
+    ```
 
 ## Installation
 

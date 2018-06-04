@@ -16,9 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TESTING
-//#include <iostream>
-
 #include "kmeriser.h"
 #include "utils.h"
 
@@ -85,27 +82,5 @@ baserator::inc()
 
     return !exhausted;
 }
-
-// TESTING
-/*
-int main(int, char *[]) {
-
-    char cs[] = "awnx";
-    baserator b;
-
-    for (int i = 0; i<sizeof(cs)-1; ++i)
-    {
-        b.set(cs[i]);
-
-        for (int j = 0; j<5; ++j) {
-            std::cout << "char : " << cs[i] << std::endl;
-            std::cout << "round: " << j << std::endl;
-            std::cout << "value: " << b.val() << std::endl;
-            std::cout << "inc  : " << b.inc() << std::endl;
-            std::cout << std::endl;
-        }
-    }
-}
-*/
 
 // vim: sts=4:sw=4:ai:si:et

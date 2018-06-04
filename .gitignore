@@ -1,2 +1,5 @@
+kcst
 *.o
 a.out
+test-*
+!test-*.cpp

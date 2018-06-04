@@ -1,4 +1,4 @@
-/* kmerator.cpp
+/* test-kmerator.cpp
  * 
  * Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
  *
@@ -16,41 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <cstring>
+
 #include "kmeriser.h"
 
-kmerator::kmerator(int ksize)
+int main(int argc, char* argv[])
 {
-    for (int i = 0; i < ksize; ++i)
-        baserators_.push_back(baserator());
-}
+    char* samples[] = { "a", "n", "acw", "nn", 0 };
+    char** ss = argc > 1 ? argv+1 : samples;
+    const char *s;
 
-void
-kmerator::set(const char *p)
-{
-    for (std::vector<baserator>::iterator b = baserators_.begin(); b != baserators_.end(); ++b) 
-        b->set(*p++);
-}
+    while ((s = *ss++))
+    {
+        size_t k = std::strlen(s);
 
-bool
-kmerator::inc()
-{
-    std::vector<baserator>::iterator p = baserators_.end();
+        kmerator r(k);
+        r.set(s);
 
-    while (--p != baserators_.begin() && !p->inc())
-        /* carry the inc across the baserators */;
+        std::cout << "string: " << s << std::endl;
+        std::cout << "kmers:";
 
-    return p != baserators_.begin() || p->inc();
-}
-
-int
-kmerator::val() const
-{
-    int res = 0;
-
-    for (std::vector<baserator>::const_iterator p = baserators_.begin(); p != baserators_.end(); ++p)
-        res = (res<<2) | p->val();
-
-    return res;
+        do {
+            std::cout << ' ' << r.val();
+        } while (r.inc());
+        
+        std::cout << std::endl << std::endl;
+    }
 }
 
 // vim: sts=4:sw=4:ai:si:et
