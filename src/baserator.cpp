@@ -64,9 +64,8 @@ baserator::set(char c)
     if (o < 0 || o > 25)
         raise_error("invalid base: %c", c);
 
-    vals_ = LETTER_BASES[o];
-
     pos_ = 0;
+    vals_ = LETTER_BASES[o];
 
     if (vals_[0] == X)
         raise_error("invalid base: %c", c);

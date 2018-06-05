@@ -19,13 +19,13 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-const int MAX_KSIZE = 4 * sizeof(int) - 1;
+const int MAX_KSIZE = 4 * sizeof(knum) - 1;
 
 kmerator::kmerator(const char *begin, const char *end, int ksize)
     : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
 {
     if (ksize < 1 || ksize > MAX_KSIZE)
-        raise_error("invalid kmer size: %d; must be in range [1,%d]", ksize, MAX_KSIZE);
+        raise_error("invalid kmer size: %lld; must be in range [1,%lld]", (long long)ksize, MAX_KSIZE);
 
     if (pcur_ < pend_)
         for (int i = 0; i < ksize; ++i)
@@ -57,10 +57,10 @@ kmerator::inc()
     return done;
 }
 
-int
+knum
 kmerator::val() const
 {
-    int res = 0;
+    knum res = 0;
 
     if (!(pcur_ < pend_))
         raise_error("kmerator read attempted past right bound of sequence");

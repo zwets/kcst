@@ -22,6 +22,9 @@
 #include <vector>
 #include <map>
 
+typedef long knum;  // kmer number
+typedef int skey;   // sequence key
+
 class kmer_db
 {
     private:
@@ -32,32 +35,32 @@ class kmer_db
 
         int ksize() const { return ksize_; }
 
-        virtual void add_kmer(int, int) = 0;
-        virtual const std::set<int>& kmer_hits(int kmer) const = 0;
+        virtual void add_kmer(knum, skey) = 0;
+        virtual const std::vector<skey>& kmer_hits(knum kmer) const = 0;
 };
 
 class vector_kmer_db : public kmer_db
 {
     private:
-        std::vector<std::set<int> > vec_;
+        std::vector<std::vector<skey> > vec_;
 
     public:
         vector_kmer_db(int ksize);
 
-        void add_kmer(int kmer, int seqnum);
-        const std::set<int>& kmer_hits(int kmer) const;
+        void add_kmer(knum kmer, skey key);
+        const std::vector<skey>& kmer_hits(knum kmer) const;
 };
 
 class map_kmer_db : public kmer_db
 {
     private:
-        std::map<int,std::set<int> > map_;
+        std::map<knum,std::vector<skey> > map_;
 
     public:
         map_kmer_db(int ksize);
 
-        void add_kmer(int kmer, int seqnum);
-        const std::set<int>& kmer_hits(int kmer) const;
+        void add_kmer(knum kmer, skey key);
+        const std::vector<skey>& kmer_hits(knum kmer) const;
 };
 
 #endif // kmerdb_h_INCLUDED

@@ -25,13 +25,13 @@ vector_kmer_db::vector_kmer_db(int ksize)
 }
 
 void
-vector_kmer_db::add_kmer(int kmer, int label)
+vector_kmer_db::add_kmer(knum kmer, skey key)
 {
-    vec_[kmer].insert(label);
+    vec_[kmer].push_back(key);
 }
 
-const std::set<int>&
-vector_kmer_db::kmer_hits(int kmer) const
+const std::vector<skey>&
+vector_kmer_db::kmer_hits(knum kmer) const
 {
     return vec_[kmer];
 }

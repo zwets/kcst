@@ -20,6 +20,10 @@
 
 #include <vector>
 
+// Overall typedef for a number storing an encoded kmer
+//
+typedef long knum;
+
 // Generates the base(s) for a single character, e.g. y -> c t = 1 3.
 //
 class baserator
@@ -50,7 +54,7 @@ class kmerator
     public:
         kmerator(const char* begin, const char* end, int ksize);
         bool inc();
-        int val() const;
+        knum val() const;
 };
 
 // Generates all kmers for the sequence between begin and end.
@@ -66,7 +70,7 @@ class kmeriser
     public:
         kmeriser(const char* begin, const char* end, int ksize);
         bool inc();
-        int val() const;
+        knum val() const;
 };
 
 #endif // kmeriser_h_INCLUDED

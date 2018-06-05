@@ -113,7 +113,7 @@ int main (int argc, char *argv[])
 
         fasta_reader reader(db_file);
         sequence seq;
-        int counter = 0;
+        skey counter = 0;
 
         while (reader.next_sequence(seq))
         {
@@ -160,11 +160,11 @@ int main (int argc, char *argv[])
             kmeriser ki(qry.data.c_str(), qry.data.c_str() + qry.data.length(), ksize);
 
             do {
-                int kmer = ki.val();
+                knum kmer = ki.val();
                 std::cout << "- kmer " << kmer << " hits:";
-                const std::set<int>& hits = db.kmer_hits(kmer);
+                const std::vector<skey>& hits = db.kmer_hits(kmer);
                 if (!hits.empty()) {
-                    for (std::set<int>::const_iterator p = hits.begin(); p != hits.end(); ++p)
+                    for (std::vector<skey>::const_iterator p = hits.begin(); p != hits.end(); ++p)
                         std::cout << " " << *p;
                     std::cout << std::endl;
                 }
