@@ -24,6 +24,7 @@
 #include <cstdlib>
 
 #include "fastareader.h"
+#include "hitcounter.h"
 #include "kmeriser.h"
 #include "kmerdb.h"
 #include "utils.h"
@@ -110,16 +111,18 @@ int main (int argc, char *argv[])
 
         std::cerr << "ok\nreading database sequences ... ";
 
+        hit_counter counter;
+
         fasta_reader reader(db_file);
         sequence seq;
-        skey counter = 0;
 
         while (reader.next_sequence(seq))
         {
-            ++counter;
+            skey key = counter.add_target(seq.header);
+
             kmerator k(seq.data.c_str(), seq.data.c_str() + seq.data.length(), ksize);
             do {
-                db->add_kmer(k.val(), counter);
+                db->add_kmer(k.val(), key);
             } while (k.inc());
         }
 
@@ -153,27 +156,24 @@ int main (int argc, char *argv[])
 
         while (qry_reader.next_sequence(qry))
         {
-            std::cout << "sequence: " << qry.id << std::endl;
-            std::cout << "- data: " << qry.data.c_str() << std::endl;
-
             kmeriser ki(qry.data.c_str(), qry.data.c_str() + qry.data.length(), ksize);
 
             do {
-                knum kmer = ki.val();
-                std::cout << "- kmer " << kmer << " hits:";
-                const std::vector<skey>& hits = db->kmer_hits(kmer);
-                if (!hits.empty()) {
-                    for (std::vector<skey>::const_iterator p = hits.begin(); p != hits.end(); ++p)
-                        std::cout << " " << *p;
-                    std::cout << std::endl;
-                }
-                else
-                    std::cout << "none" << std::endl;
+                const std::vector<skey>& hits = db->kmer_hits(ki.val());
+                for (std::vector<skey>::const_iterator p = hits.begin(); p != hits.end(); ++p)
+                    counter.count_hit(*p);
             } while (ki.inc());
         }
 
         if (is != &std::cin)
             qry_file.close();
+
+        std::vector< std::pair<long,std::string> > results = counter.score_list();
+
+        for (std::vector< std::pair<long,std::string> >::const_iterator p = results.begin(); p != results.end(); ++p)
+        {
+            std::cout << p->first << '\t' << p->second << std::endl;
+        }
 
         return 0;
     }

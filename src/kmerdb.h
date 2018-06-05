@@ -16,14 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef kmerdb_h_INCLUDED
-#define kmerrb_h_INCLUDED
+#define kmerdb_h_INCLUDED
 
 #include <set>
 #include <vector>
 #include <map>
 
 typedef long knum;  // kmer number
-typedef int skey;   // sequence key
+typedef long skey;   // sequence key
 
 class kmer_db
 {
