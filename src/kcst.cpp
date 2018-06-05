@@ -29,8 +29,9 @@
 #include "utils.h"
 
 static const int MIN_KSIZE = 1;
-static const int MAX_KSIZE = 4 * sizeof(int) - 1;
-static const int DEFAULT_KSIZE = 10;
+static const int MAX_KSIZE = 4 * sizeof(knum) - 1;
+static const int DEFAULT_KSIZE = 13;
+static const int DEFAULT_MEM = 16; // GB
 
 static const std::string USAGE("\n"
 "Usage: kcst [-k KSIZE] [-v] DATABASE [QUERIES]\n"
@@ -39,6 +40,7 @@ static const std::string USAGE("\n"
 "\n");
 
 static int ksize = DEFAULT_KSIZE;
+static int max_mem = DEFAULT_MEM;
 static int verbose = false;
 
 int main (int argc, char *argv[]) 
@@ -57,7 +59,13 @@ int main (int argc, char *argv[])
             {
                 ksize = std::atoi(*argv);
                 if (ksize < MIN_KSIZE || ksize > MAX_KSIZE) 
-                    raise_error("invalid KSIZE: %d", ksize);
+                    raise_error("invalid KSIZE: %s", *argv);
+            }
+            else if (!std::strcmp("-m", *argv) && *++argv)
+            {
+                max_mem = std::atoi(*argv);
+                if (ksize < 1)
+                    raise_error("invalid MEM: %s", *argv);
             }
             else if (**argv == '-') 
             {
@@ -81,22 +89,13 @@ int main (int argc, char *argv[])
             }
         }
 
-//        std::cerr << "distinct kmers at ksize " << ksize << ": " << (1L<<(2*ksize)) << std::endl;
-//        std::cerr << "sizeof int = " << sizeof(int) << std::endl;
-//        std::cerr << "sizeof std::set<int> = " << sizeof(std::set<int>) << std::endl;
-//        std::cerr << "sizeof vector of sets = " << (sizeof(std::set<int>) * (1L<<(2*ksize))) << std::endl;
-
-        if (sizeof(std::set<int>) * (1L<<(2*ksize)) > 16L * 1024 * 1024 * 1024)
-        {
-            std::cerr << "memory request too large (reduce kmer size) ..." << std::endl;
-            return 1;
-        }
-
         if (db_fname.empty())
         {
             std::cerr << USAGE;
             return 1;
         }
+
+        std::cerr << "creating database ... ";
 
         std::ifstream db_file;
         db_file.open(db_fname.c_str());
@@ -107,9 +106,9 @@ int main (int argc, char *argv[])
             return 1;
         }
 
-        vector_kmer_db db(ksize);
+        kmer_db *db = new_kmer_db(ksize, max_mem);
 
-        std::cerr << "reading database sequences ... ";
+        std::cerr << "ok\nreading database sequences ... ";
 
         fasta_reader reader(db_file);
         sequence seq;
@@ -120,7 +119,7 @@ int main (int argc, char *argv[])
             ++counter;
             kmerator k(seq.data.c_str(), seq.data.c_str() + seq.data.length(), ksize);
             do {
-                db.add_kmer(k.val(), counter);
+                db->add_kmer(k.val(), counter);
             } while (k.inc());
         }
 
@@ -162,7 +161,7 @@ int main (int argc, char *argv[])
             do {
                 knum kmer = ki.val();
                 std::cout << "- kmer " << kmer << " hits:";
-                const std::vector<skey>& hits = db.kmer_hits(kmer);
+                const std::vector<skey>& hits = db->kmer_hits(kmer);
                 if (!hits.empty()) {
                     for (std::vector<skey>::const_iterator p = hits.begin(); p != hits.end(); ++p)
                         std::cout << " " << *p;

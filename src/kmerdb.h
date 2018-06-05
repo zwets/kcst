@@ -39,6 +39,8 @@ class kmer_db
         virtual const std::vector<skey>& kmer_hits(knum kmer) const = 0;
 };
 
+extern kmer_db* new_kmer_db(int ksize, int max_mem);
+
 class vector_kmer_db : public kmer_db
 {
     private:
