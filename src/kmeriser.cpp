@@ -25,21 +25,47 @@
 #define T 3
 #define X -1
 
-static const int BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T, X, X, X, X, X, X };
+static const int BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
 
 const int MAX_KSIZE = 4 * sizeof(knum) - 1;
 
 kmeriser::kmeriser(const char *begin, const char *end, int ksize)
     : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
 {
-    if (ksize < 1 || ksize > MAX_KSIZE)
-        raise_error("invalid kmer size: %lld; must be in range [1,%lld]", (long long)ksize, MAX_KSIZE);
+    if (ksize < 1 || ksize > MAX_KSIZE || !(ksize & 1))
+        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, MAX_KSIZE);
 }
 
 bool
 kmeriser::inc()
 {
     return ++pcur_ < pend_;
+}
+
+static int
+base_value(int c)
+{
+    int o = c - 'a';
+
+    if (o < 0 || o > 19)
+    {
+        o = c - 'A';            // try between 'A' and 'T'
+        if (o < 0 || o > 19)
+            raise_error("invalid base: %c; must be one of [acgtACGT]", c);
+    }
+
+    int v = BASE_VALUES[o];
+
+    if (v == X)
+        raise_error("invalid base: %c; must be one of [acgtACGT]", c);
+
+    return v;
+}
+
+inline int
+comp_base_value(int c)
+{
+    return base_value(c) ^ 3;
 }
 
 knum
@@ -50,23 +76,31 @@ kmeriser::val() const
     if (!(pcur_ < pend_))
         raise_error("kmeriser read attempted past right bound of sequence");
 
-    for (int i = 0; i < ksize_; ++i)
+    const char *pmid = pcur_ + (ksize_ / 2);
+
+    if (!(base_value(*pmid) & 2))  // a or c, so encode forward strand
     {
-        int c = pcur_[i];
+        const char *p = pcur_-1;
 
-        int o = c - 'a';
-        if (o < 0 || o > 19)
-        {
-            o = c - 'A';            // try between 'A' and 'T'
-            if (o < 0 || o > 19)
-                raise_error("invalid base: %c; must be one of [acgtACGT]", c);
-        }
+        while (++p < pmid)
+            res = (res << 2) | base_value(*p);
 
-        int v = BASE_VALUES[o];
-        if (v == X)
-            raise_error("invalid base: %c; must be one of [acgtACGT]", c);
+        res = (res << 1) | base_value(*p) & 1;        // a->0, c->1
 
-        res = res<<2 | v;
+        while (++p < pcur_ + ksize_)
+            res = (res << 2) | base_value(*p);
+    }
+    else
+    {
+        const char *p = pcur_ + ksize_;
+
+        while (--p > pmid)
+            res = (res << 2) | comp_base_value(*p);
+
+        res = (res << 1) | comp_base_value(*p) & 1;   // t->a->0, g->c->1
+
+        while (--p >= pcur_)
+            res = (res << 2) | comp_base_value(*p);
     }
 
     return res;

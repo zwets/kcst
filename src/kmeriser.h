@@ -41,7 +41,7 @@ class baserator
 
 // Generates all kmers for the sequence between begin and end.
 // Takes into account letters coding for multiple bases, and generates
-// all kmers for these.  E.g. 2mers for aaw -> 0 
+// all kmers for these.  E.g. aaw -> {aaa,aat} -> b000000=0, b000011=3
 //
 class kmerator
 {

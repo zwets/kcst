@@ -1,5 +1,8 @@
 all: test-baserator test-kmerator test-kmeriser
 
+clean:
+	rm -f test-baserator test-kmerator test-kmeriser
+
 test: test-baserator
 	./test-baserator
 
