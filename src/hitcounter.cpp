@@ -26,6 +26,7 @@ hit_counter::add_target(const std::string& name)
 {
     targets_.push_back(name);
     hits_.push_back(0L);
+    return hits_.size();
 }
 
 void

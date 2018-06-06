@@ -170,7 +170,8 @@ int main (int argc, char *argv[])
 
         std::vector< std::pair<long,std::string> > results = counter.score_list();
 
-        for (std::vector< std::pair<long,std::string> >::const_iterator p = results.begin(); p != results.end(); ++p)
+        int i = 21;
+        for (std::vector< std::pair<long,std::string> >::const_reverse_iterator p = results.rbegin(); --i && p != results.rend(); ++p)
         {
             std::cout << p->first << '\t' << p->second << std::endl;
         }
