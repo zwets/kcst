@@ -25,7 +25,8 @@
 
 int main(int argc, char* argv[])
 {
-    char *s = "acgtacgtacgtacgt";
+    char sample[] = "acgtacgtacgtacgt";
+    const char *s = sample;
     int k = 5;
 
     if (argc > 2)
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
 
         if (k < 0 || k > l)
         {
-            k = l/2;
+            k = l/2 + 1;
         }
 
         kmeriser r(s, e, k);
@@ -56,7 +57,7 @@ int main(int argc, char* argv[])
             std::cout << ' ' << r.val();
         } while (r.inc());
             
-        std::cout << std::endl << std::endl;
+        std::cout << std::endl;
     }
     catch (std::runtime_error e) {
         std::cerr << "ERROR: " << e.what() << std::endl;

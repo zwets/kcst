@@ -22,10 +22,10 @@
 
 #include "kmeriser.h"
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
-    char* samples[] = { "aaaa", "nnnn", "acwt", 0 };
-    char** ss = argc > 1 ? argv+1 : samples;
+    const char * samples[] = { "aaaa", "nnnn", "acwt", 0 };
+    const char** ss = argc > 1 ? argv+1 : samples;
     const char *b;
 
     try {
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
                 std::cout << ' ' << r.val();
             } while (r.inc());
             
-            std::cout << std::endl << std::endl;
+            std::cout << std::endl;
         }
     }
     catch (std::runtime_error e) {
