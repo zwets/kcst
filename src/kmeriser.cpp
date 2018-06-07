@@ -19,28 +19,39 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-#define A 0
-#define C 1
-#define G 2
-#define T 3
-#define X -1
+static const knum A = 0;
+static const knum C = 1;
+static const knum G = 2;
+static const knum T = 3;
+static const knum X = -1;
 
-static const int BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
+static const knum BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
 
-const int MAX_KSIZE = 4 * sizeof(knum) - 1;
 
-kmeriser::kmeriser(const char *begin, const char *end, int ksize)
-    : pcur_(begin), pend_(end-ksize+1), ksize_(ksize)
+kmeriser::kmeriser(int ksize)
+    : pcur_(0), pend_(0), ksize_(ksize)
 {
     if (ksize < 1 || ksize > MAX_KSIZE || !(ksize & 1))
         raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, MAX_KSIZE);
 }
+
+
+bool
+kmeriser::set(const char *begin, const char *end)
+{
+    pcur_ = begin;
+    pend_ = end - ksize_ + 1;
+
+    return pcur_ < pend_;
+}
+
 
 bool
 kmeriser::inc()
 {
     return ++pcur_ < pend_;
 }
+
 
 static int
 base_value(int c)
@@ -62,14 +73,16 @@ base_value(int c)
     return v;
 }
 
+
 inline int
 comp_base_value(int c)
 {
     return base_value(c) ^ 3;
 }
 
+
 knum
-kmeriser::val() const
+kmeriser::get() const
 {
     knum res = 0;
 
@@ -102,6 +115,17 @@ kmeriser::val() const
         while (--p >= pcur_)
             res = (res << 2) | comp_base_value(*p);
     }
+
+    return res;
+}
+
+
+std::vector<knum>
+kmeriser::get_all()
+{
+    std::vector<knum> res;
+
+    if (pcur_ < pend_) do res.push_back(get()); while (inc());
 
     return res;
 }

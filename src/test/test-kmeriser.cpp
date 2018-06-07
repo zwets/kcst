@@ -48,13 +48,14 @@ int main(int argc, char* argv[])
             k = l/2 + 1;
         }
 
-        kmeriser r(s, e, k);
+        kmeriser r(k);
+        r.set(s, e);
 
         std::cout << "string: " << s << std::endl;
         std::cout << "kmers:";
 
         do {
-            std::cout << ' ' << r.val();
+            std::cout << ' ' << r.get();
         } while (r.inc());
             
         std::cout << std::endl;

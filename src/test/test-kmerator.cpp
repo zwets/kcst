@@ -24,28 +24,39 @@
 
 int main(int argc, const char* argv[])
 {
-    const char * samples[] = { "aaaa", "nnnn", "acwt", 0 };
-    const char** ss = argc > 1 ? argv+1 : samples;
-    const char *b;
+    char sample[] = "acwt";
+    const char *s = sample;
+    int k = 3;
+
+    if (argc > 2)
+    {
+        k = std::atoi(argv[1]);
+        s = argv[2];
+    }
+    else if (argc > 1)
+    {
+        s = argv[1];
+    }
 
     try {
-        while ((b = *ss++))
-        {
-            const char *e = b + std::strlen(b);
-            int k = std::strlen(b);
-            if (k > 2)
-                k = k - 2;
-            kmerator r(b, e, k);
+        int k = std::strlen(s);
+        if (k > 2)
+            k = k - 2 | 1;
+        else
+            k = 1;
 
-            std::cout << "string: " << b << std::endl;
-            std::cout << "kmers:";
+        kmerator r(k, 0);
+        r.set(s, s + std::strlen(s));
 
-            do {
-                std::cout << ' ' << r.val();
-            } while (r.inc());
-            
-            std::cout << std::endl;
-        }
+        std::cout << "string: " << s << std::endl;
+        std::cout << "k-size: " << k << std::endl;
+        std::cout << "kmers:";
+
+        do {
+            std::cout << ' ' << r.get();
+        } while (r.inc());
+        
+        std::cout << std::endl;
     }
     catch (std::runtime_error e) {
         std::cerr << "ERROR: " << e.what() << std::endl;

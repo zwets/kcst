@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
 
         for(;seq != end;++seq)
         {
-            baserator b(*seq);
+            baserator b;
+            b.set(*seq);
 
             std::cout << "input: " << *seq << "  mult: " << b.len() << std::endl;
 

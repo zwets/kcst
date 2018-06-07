@@ -19,48 +19,84 @@
 #define kmeriser_h_INCLUDED
 
 #include <vector>
+#include <cstdint>
 
-// Overall typedef for a number storing an encoded kmer
+
+// knum - typedef for the number type used to store an encoded kmer,
 //
-typedef long knum;
+typedef std::uint64_t knum;
 
-// Generates the base(s) for a single character, e.g. y -> c t = 1 3.
+// MAX_KSIZE is the longest possible kmer size (must be odd)
+//
+const int MAX_KSIZE = 4 * sizeof(knum) - 1;  // largest odd number
+
+
+// Generator for the knums for a single extended base character.
+//
+// For the four proper bases (ACGT), val() returns just the single letter;
+// len() is 1, and inc() returns false on the first call.  For extended bases,
+// val() followed by inc() generates each of the len() alternatives in turn.
+//
+// E.g.: y -> c,t -> 1,3; n -> a,c,g,t -> 0,1,2,3.
 //
 class baserator
 {
     private:
-        const int *vals_;
+        const knum *vals_;
         int pos_;
         int end_;
 
     public:
-        baserator(char c) { set(c); }
         void set(char c);
         bool inc();
         int len() const { return end_; }
-        int val() const { return vals_[pos_]; }
+        knum val() const { return vals_[pos_]; }
 };
 
-// Generates all kmers for the sequence between begin and end.
-// Takes into account letters coding for multiple bases, and generates
-// all kmers for these.  E.g. aaw -> {aaa,aat} -> b000000=0, b000011=3
+
+// Generator for all knums for a sequence of characters.
+//
+// Iterates a ksize kmer window over the character sequence [begin,end).
+// get() returns the knum representation at the current location, inc()
+// advances to the next or returns false.
+// If the current window has extended characters (that stand for multiple
+// bases), then each variant is generated in turn before advancing to the
+// next position in the sequence.
+//
+// For instance: abc -> {acc,agc,atc}, and nnn -> {aaa,aac,...60...,ttg,ttt}.
+// Note how this blows up quickly: a 15-mer 'NN...NN' generates a billion
+// kmers, and is useless as it is hit by everything.  Hence by default the
+// limit max_variants (per kmer) is DEFAULT_MAX_VARIANTS (4), adjustable
+// via the constructor, pass 0 to set no limit.
 //
 class kmerator
 {
+    public:
+        static const int DEFAULT_MAX_VARIANTS = 4;
+
     private:
+        std::vector<baserator> baserators_;
         const char* pcur_;
         const char* pend_;
         int ksize_;
-        std::vector<baserator> baserators_;
+        int variant_;
+        int max_variants_;
 
     public:
-        kmerator(const char* begin, const char* end, int ksize);
+        kmerator(int ksize, int max_variants = DEFAULT_MAX_VARIANTS);
+
+        bool set(const char *begin, const char *end);
         bool inc();
-        knum val() const;
+        int variant() const;
+        knum get() const;
+        std::vector<knum> get_all();
 };
 
-// Generates all kmers for the sequence between begin and end.
-// Accepts only the proper base letters: a, c, g, t.
+
+// Generator for all knums for a sequence of bases.
+//
+// Identical to kmerator(begin, end, ksize, 1), but faster, as this generator
+// handles only sequences consisting of proper bases.
 //
 class kmeriser
 {
@@ -70,9 +106,12 @@ class kmeriser
         int ksize_;
 
     public:
-        kmeriser(const char* begin, const char* end, int ksize);
+        kmeriser(int ksize);
+
+        bool set(const char *begin, const char *end);
         bool inc();
-        knum val() const;
+        knum get() const;
+        std::vector<knum> get_all();
 };
 
 #endif // kmeriser_h_INCLUDED
