@@ -31,11 +31,13 @@ class baserator
     private:
         const int *vals_;
         int pos_;
+        int end_;
 
     public:
         baserator(char c) { set(c); }
         void set(char c);
         bool inc();
+        int len() const { return end_; }
         int val() const { return vals_[pos_]; }
 };
 

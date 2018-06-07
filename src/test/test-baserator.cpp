@@ -23,27 +23,31 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-int main(int argc, char *argv[]) {
+static const char DEFAULT_SEQ[] = "abcdghkmnrstvw";
 
-    const char *cs = argc == 2 ? argv[1] : "awnx";
-    baserator b;
+int main(int argc, char *argv[]) 
+{
+    try {
+        const char  *seq = argc == 2 ? argv[1] : DEFAULT_SEQ,
+                    *end = seq + strlen(seq);
 
-    for (int i = 0; i < strlen(cs); ++i)
-    {
-        try {
-            b.set(cs[i]);
-        } catch (std::runtime_error e) {
-            std::cerr << "ERROR: " << e.what() << std::endl;
-            continue;
+        for(;seq != end;++seq)
+        {
+            baserator b(*seq);
+
+            std::cout << "input: " << *seq << "  mult: " << b.len() << std::endl;
+
+            for (int j = 0; j<b.len(); ++j) {
+                std::cout << "  round: " << j;       // << std::endl;
+                std::cout << "  value: " << b.val(); // << std::endl;
+                std::cout << "  inc: " << b.inc(); // << std::endl;
+                std::cout << std::endl;
+            }
         }
 
-        for (int j = 0; j<5; ++j) {
-            std::cout << "char : " << cs[i] << std::endl;
-            std::cout << "round: " << j << std::endl;
-            std::cout << "value: " << b.val() << std::endl;
-            std::cout << "inc  : " << b.inc() << std::endl;
-            std::cout << std::endl;
-        }
+    } catch (std::runtime_error e) {
+        std::cerr << "ERROR: " << e.what() << std::endl;
+        std::cerr << "Usage: test-baserator [SEQUENCE]" << std::endl;
     }
 }
 
