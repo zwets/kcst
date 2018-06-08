@@ -19,16 +19,16 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-static const knum A = 0;
-static const knum C = 1;
-static const knum G = 2;
-static const knum T = 3;
-static const knum O = -1;
+static const knum_t A = 0;
+static const knum_t C = 1;
+static const knum_t G = 2;
+static const knum_t T = 3;
+static const knum_t O = -1;
 
 
 // The number of bases each letter of the alphabet maps on
 //
-static const knum LETTER_BASES_LEN[26] = {
+static const int LETTER_BASES_LEN[26] = {
 //  A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, O, Y, Z
     1, 3, 1, 3, 0, 0, 1, 3, 0, 0, 2, 0, 2, 4, 0, 0, 0, 2, 2, 1, 0, 3, 2, 0, 2, 0
 };
@@ -36,7 +36,7 @@ static const knum LETTER_BASES_LEN[26] = {
 
 // The mapping from alphabet letter to the list bases it stands for
 //
-static const knum LETTER_BASES[26][4] = { 
+static const knum_t LETTER_BASES[26][4] = { 
     { A, O, O, O }, // A - A
     { C, G, T, O }, // B - not A
     { C, O, O, O }, // C - C
@@ -82,10 +82,10 @@ baserator::set(char c)
     }
 
     vals_ = LETTER_BASES[o];
-    end_ = LETTER_BASES_LEN[o];
     pos_ = 0;
+    end_ = LETTER_BASES_LEN[o];
 
-    if (*vals_ == O)
+    if (end_ == 0)
         raise_error("invalid base: %c", c);
 }
 
@@ -94,13 +94,12 @@ baserator::set(char c)
 bool
 baserator::inc()
 {
-    if (++pos_ == end_)
-    {
-        pos_ = 0;
-        return false;
-    }
+    bool done = ++pos_ < end_;
 
-    return true;
+    if (!done)
+        pos_ = 0;
+
+    return done;
 }
 
 // vim: sts=4:sw=4:ai:si:et

@@ -22,27 +22,29 @@
 #include <cstdint>
 
 
-// knum - typedef for the number type used to store an encoded kmer,
+// knum_t - the number type used to store an encoded kmer,
 //
-typedef std::uint64_t knum;
+typedef std::uint64_t knum_t;
 
 // MAX_KSIZE is the longest possible kmer size (must be odd)
 //
-const int MAX_KSIZE = 4 * sizeof(knum) - 1;  // largest odd number
+const int MAX_KSIZE = 4 * sizeof(knum_t) - 1;  // largest odd number
 
 
 // Generator for the knums for a single extended base character.
 //
-// For the four proper bases (ACGT), val() returns just the single letter;
-// len() is 1, and inc() returns false on the first call.  For extended bases,
-// val() followed by inc() generates each of the len() alternatives in turn.
+// For the four proper bases (ACGT), knum() generates just the single letter,
+// len() is 1, and inc() is false on the first call.  For extended bases, each
+// knum() followed by inc() generates one of the len() alternatives in turn.
 //
-// E.g.: y -> c,t -> 1,3; n -> a,c,g,t -> 0,1,2,3.
+// E.g.: after set('y'), len() returns 2, knum() returns 0 ('a'), inc() returns
+// true; then knum() returns 3 ('t'), inc() returns false, and it has rolled
+// over to the initial situation.
 //
 class baserator
 {
     private:
-        const knum *vals_;
+        const knum_t *vals_;
         int pos_;
         int end_;
 
@@ -50,7 +52,7 @@ class baserator
         void set(char c);
         bool inc();
         int len() const { return end_; }
-        knum val() const { return vals_[pos_]; }
+        knum_t knum() const { return vals_[pos_]; }
 };
 
 
@@ -88,8 +90,8 @@ class kmerator
         bool set(const char *begin, const char *end);
         bool inc();
         int variant() const;
-        knum get() const;
-        std::vector<knum> get_all();
+        knum_t knum() const;
+        std::vector<knum_t> knums();
 };
 
 
@@ -110,8 +112,8 @@ class kmeriser
 
         bool set(const char *begin, const char *end);
         bool inc();
-        knum get() const;
-        std::vector<knum> get_all();
+        knum_t knum() const;
+        std::vector<knum_t> knums();
 };
 
 #endif // kmeriser_h_INCLUDED

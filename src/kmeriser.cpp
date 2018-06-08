@@ -19,13 +19,13 @@
 #include "kmeriser.h"
 #include "utils.h"
 
-static const knum A = 0;
-static const knum C = 1;
-static const knum G = 2;
-static const knum T = 3;
-static const knum X = -1;
+static const knum_t A = 0;
+static const knum_t C = 1;
+static const knum_t G = 2;
+static const knum_t T = 3;
+static const knum_t X = -1;
 
-static const knum BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
+static const knum_t BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
 
 
 kmeriser::kmeriser(int ksize)
@@ -53,8 +53,8 @@ kmeriser::inc()
 }
 
 
-static int
-base_value(int c)
+static knum_t
+base_value(char c)
 {
     int o = c - 'a';
 
@@ -65,7 +65,7 @@ base_value(int c)
             raise_error("invalid base: %c; must be one of [acgtACGT]", c);
     }
 
-    int v = BASE_VALUES[o];
+    knum_t v = BASE_VALUES[o];
 
     if (v == X)
         raise_error("invalid base: %c; must be one of [acgtACGT]", c);
@@ -74,17 +74,17 @@ base_value(int c)
 }
 
 
-inline int
-comp_base_value(int c)
+inline knum_t
+comp_base_value(char c)
 {
     return base_value(c) ^ 3;
 }
 
 
-knum
-kmeriser::get() const
+knum_t
+kmeriser::knum() const
 {
-    knum res = 0;
+    knum_t res = 0;
 
     if (!(pcur_ < pend_))
         raise_error("kmeriser read attempted past right bound of sequence");
@@ -98,7 +98,7 @@ kmeriser::get() const
         while (++p < pmid)
             res = (res << 2) | base_value(*p);
 
-        res = (res << 1) | base_value(*p) & 1;        // a->0, c->1
+        res = (res << 1) | (base_value(*p) & 1);        // a->0, c->1
 
         while (++p < pcur_ + ksize_)
             res = (res << 2) | base_value(*p);
@@ -110,7 +110,7 @@ kmeriser::get() const
         while (--p > pmid)
             res = (res << 2) | comp_base_value(*p);
 
-        res = (res << 1) | comp_base_value(*p) & 1;   // t->a->0, g->c->1
+        res = (res << 1) | (comp_base_value(*p) & 1);   // t->a->0, g->c->1
 
         while (--p >= pcur_)
             res = (res << 2) | comp_base_value(*p);
@@ -120,12 +120,12 @@ kmeriser::get() const
 }
 
 
-std::vector<knum>
-kmeriser::get_all()
+std::vector<knum_t>
+kmeriser::knums()
 {
-    std::vector<knum> res;
+    std::vector<knum_t> res;
 
-    if (pcur_ < pend_) do res.push_back(get()); while (inc());
+    if (pcur_ < pend_) do res.push_back(knum()); while (inc());
 
     return res;
 }

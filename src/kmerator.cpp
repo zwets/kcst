@@ -86,27 +86,27 @@ kmerator::inc()
 }
 
 
-knum
-kmerator::get() const
+knum_t
+kmerator::knum() const
 {
-    knum res = 0;
+    knum_t res = 0;
 
     if (!(pcur_ < pend_))
         raise_error("kmerator read attempted past right bound of sequence");
 
     for (std::vector<baserator>::const_iterator p = baserators_.begin(); p != baserators_.end(); ++p)
-        res = (res<<2) | p->val();
+        res = (res<<2) | p->knum();
 
     return res;
 }
 
 
-std::vector<knum>
-kmerator::get_all()
+std::vector<knum_t>
+kmerator::knums()
 {
-    std::vector<knum> res;
+    std::vector<knum_t> res;
 
-    if (pcur_ < pend_) do res.push_back(get()); while (inc());
+    if (pcur_ < pend_) do res.push_back(knum()); while (inc());
 
     return res;
 }
