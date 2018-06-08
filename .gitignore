@@ -1,6 +1,7 @@
 kcst
 all-tests
+test-int-sizes
 *.o
 *.a
 a.out
-*.fsa
+*.f?a

@@ -1,3 +1,9 @@
+#!/usr/bin/make
+
+OBJS = kcst.o fastareader.o hitcounter.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
+
+HDRS = fastareader.h hitcounter.h kmerdb.h kmeriser.h utils.h
+
 CXXFLAGS += -O2 -g -Wall -Wextra -pthread -std=c++11
 
 all: kcst
@@ -5,6 +11,9 @@ all: kcst
 clean:
 	rm -f *.o kcst
 
-kcst: kcst.cpp fastareader.cpp hitcounter.cpp kmerdb.cpp vectordb.cpp mapdb.cpp kmeriser.cpp kmerator.cpp baserator.cpp utils.cpp
-	g++ $(CXXFLAGS) -o $@ $^
+kcst: $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+%.o: %.cpp $(HDRS)
+	$(CXX) $(CXXFLAGS) -c $<
 

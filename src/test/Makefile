@@ -63,26 +63,22 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-# Builds a sample test.  A test should link with either gtest.a or
-# gtest_main.a, depending on whether it defines its own main()
-# function.
+# USER SECTION
 
 USER_HEADERS = $(USER_DIR)/kmeriser.h
 
-# Our objs
-
 USER_OBJS = kmeriser.o kmerator.o baserator.o utils.o
 
-utils.o : $(USER_DIR)/utils.cpp $(USER_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
-
-baserator.o : $(USER_DIR)/baserator.cpp $(USER_HEADERS)
+kmeriser.o : $(USER_DIR)/kmeriser.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 kmerator.o : $(USER_DIR)/kmerator.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
-kmeriser.o : $(USER_DIR)/kmeriser.cpp $(USER_HEADERS)
+baserator.o : $(USER_DIR)/baserator.cpp $(USER_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+utils.o : $(USER_DIR)/utils.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 # Our test objs
@@ -98,7 +94,8 @@ kmerator-test.o : kmerator-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 kmeriser-test.o : kmeriser-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
-# Our executable
+# The all-tests executable.  A test should link with either gtest.a or
+# gtest_main.a, depending on whether it defines its own main() function.
 
 all-tests: $(TEST_OBJS) $(USER_OBJS) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $@
