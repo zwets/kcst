@@ -1,6 +1,6 @@
 kcst
+all-tests
 *.o
+*.a
 a.out
 *.fsa
-test-*
-!test-*.cpp
