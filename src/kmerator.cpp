@@ -19,6 +19,8 @@
 #include "kmeriser.h"
 #include "utils.h"
 
+namespace kcst {
+    
 
 kmerator::kmerator(int ksize, int max_variants)
     : pcur_(0), pend_(0), ksize_(ksize), variant_(0), max_variants_(max_variants)
@@ -110,5 +112,8 @@ kmerator::knums()
 
     return res;
 }
+
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

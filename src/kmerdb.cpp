@@ -21,6 +21,9 @@
 #include "kmerdb.h"
 #include "utils.h"
 
+namespace kcst {
+
+
 kmer_db* new_kmer_db(int ksize, int max_mem)
 {
     kmer_db *res;
@@ -50,5 +53,8 @@ kmer_db* new_kmer_db(int ksize, int max_mem)
 
     return res;
 }
+
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

@@ -19,6 +19,9 @@
 #include "kmerdb.h"
 #include "utils.h"
 
+namespace kcst {
+
+
 vector_kmer_db::vector_kmer_db(int ksize)
     : kmer_db(ksize), vec_(1L<<(2*ksize))
 {
@@ -35,5 +38,8 @@ vector_kmer_db::kmer_hits(knum_t knum) const
 {
     return vec_[knum];
 }
+
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

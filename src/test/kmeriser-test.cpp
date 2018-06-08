@@ -19,6 +19,8 @@
 #include <gtest/gtest.h>
 #include "kmeriser.h"
 
+using namespace kcst;
+
 namespace {
 
 const char  LOWER_LETTERS[] = "acgtwsmkrybdhvn";

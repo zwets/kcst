@@ -21,38 +21,48 @@
 #include "hitcounter.h"
 #include "utils.h"
 
-long
+namespace kcst {
+
+
+skey_t
 hit_counter::add_target(const std::string& name)
 {
     targets_.push_back(name);
-    hits_.push_back(0L);
+    hits_.push_back(0);
     return hits_.size();
 }
+
 
 void
 hit_counter::reset()
 {
-    std::vector<long>::iterator p = hits_.begin();
+    std::vector<hitc_t>::iterator p = hits_.begin();
     while (p != hits_.end())
     {
-        *p++ = 0L;
+        *p++ = 0;
     }
 }
 
-std::vector< std::pair<long,std::string> >
+
+typedef std::pair<hitc_t,std::string> hit_rec;
+
+std::vector<hit_rec>
 hit_counter::score_list() const
 {
-    std::vector< std::pair<long,std::string> > res;
+    std::vector<hit_rec> res;
 
     std::vector<std::string>::const_iterator p_tgt = targets_.begin();
-    std::vector<long>::const_iterator p_hit = hits_.begin();
+    std::vector<hitc_t>::const_iterator p_hit = hits_.begin();
 
     while (p_tgt != targets_.end())
-        res.push_back(std::pair<long,std::string>(*p_hit++, *p_tgt++));
+        res.push_back(hit_rec(*p_hit++, *p_tgt++));
 
     std::sort(res.begin(), res.end());
 
     return res;
 }
+
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

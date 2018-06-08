@@ -29,6 +29,8 @@
 #include "kmerdb.h"
 #include "utils.h"
 
+using namespace kcst;
+
 static const int MIN_KSIZE = 1;
 static const int MAX_VARIANTS_PER_KMER = 16;
 static const int DEFAULT_KSIZE = 13;
@@ -172,10 +174,10 @@ int main (int, char *argv[])
         if (is != &std::cin)
             qry_file.close();
 
-        std::vector< std::pair<long,std::string> > results = counter.score_list();
+        std::vector< std::pair<hitc_t,std::string> > results = counter.score_list();
 
         int i = 21;
-        for (std::vector< std::pair<long,std::string> >::const_reverse_iterator p = results.rbegin(); --i && p != results.rend(); ++p)
+        for (std::vector< std::pair<hitc_t,std::string> >::const_reverse_iterator p = results.rbegin(); --i && p != results.rend(); ++p)
         {
             std::cout << p->first << '\t' << p->second << std::endl;
         }

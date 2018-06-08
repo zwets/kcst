@@ -22,6 +22,9 @@
 #include <vector>
 #include <map>
 
+namespace kcst {
+
+
 typedef std::uint_fast64_t knum_t;  // kmer number
 typedef std::uint32_t skey_t;   // sequence key
 
@@ -64,6 +67,9 @@ class map_kmer_db : public kmer_db
         void add_kmer(knum_t knum, skey_t skey);
         const std::vector<skey_t>& kmer_hits(knum_t knum) const;
 };
+
+
+} // namespace kcst
 
 #endif // kmerdb_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

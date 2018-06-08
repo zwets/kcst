@@ -22,8 +22,10 @@
 #include <string>
 #include <vector>
 
+namespace kcst {
 
-// Represents a single sequence.
+
+// sequence - Value object holding a single sequence
 //
 struct sequence {
     std::string id;         // whatever is between '>' and the first space
@@ -32,7 +34,15 @@ struct sequence {
 };
 
 
-// Reads sequences off a stream, validating structure but not content.
+// fasta_reader - reads sequences off a stream
+//
+// This reader validates the structure of the input, but not the content of
+// the sequences.  It passes through all characters, except whitespace which
+// it strips.
+//
+// The reader is lenient in one special case: if the input consists of only
+// sequence data (with no header lines before or after it), then this is
+// accepted as an 'anonymous' sequence.
 //
 class fasta_reader {
 
@@ -45,6 +55,9 @@ class fasta_reader {
         fasta_reader(std::istream&);
         bool next_sequence(sequence&);
 };
+
+
+} // namespace kcst
 
 #endif // fastareader_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

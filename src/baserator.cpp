@@ -19,6 +19,9 @@
 #include "kmeriser.h"
 #include "utils.h"
 
+namespace kcst {
+
+
 static const knum_t A = 0;
 static const knum_t C = 1;
 static const knum_t G = 2;
@@ -101,5 +104,8 @@ baserator::inc()
 
     return done;
 }
+
+
+} // namespace kcst 
 
 // vim: sts=4:sw=4:ai:si:et

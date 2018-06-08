@@ -20,26 +20,42 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
-typedef long skey;
+namespace kcst {
 
+
+// skey_t - numeric type to hold identifier of a sequence
+//
+typedef std::uint32_t skey_t;
+
+// hitc_t - numeric type to hold hit counts on a sequence
+//
+typedef std::uint_fast32_t hitc_t;
+
+
+// hit_counter - tracks a list of sequences and their hit counts
+// 
 class hit_counter
 {
     private:
         std::vector<std::string> targets_;
-        std::vector<long> hits_;
+        std::vector<hitc_t> hits_;
 
     public:
-        skey add_target(const std::string& name);
+        skey_t add_target(const std::string& name);
         
         void reset();
-        void count_hit(skey target) { ++hits_[target]; }
+        void count_hit(skey_t skey) { ++hits_[skey]; }
 
         const std::vector<std::string>& targets() const { return targets_; }
-        const std::vector<long>& hitcounts() const { return hits_; }
+        const std::vector<hitc_t>& hits() const { return hits_; }
 
-        std::vector< std::pair<long,std::string> > score_list() const;
+        std::vector< std::pair<hitc_t,std::string> > score_list() const;
 };
+
+
+} // namespace kcst
 
 #endif // hitcounter_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

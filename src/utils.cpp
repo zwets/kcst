@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <cstdarg>
 
+namespace kcst {
+
 static char buf[2048];
 
 void raise_error(const char *fmt, ...)
@@ -31,5 +33,7 @@ void raise_error(const char *fmt, ...)
 
     throw std::runtime_error(buf);
 }
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

@@ -19,6 +19,9 @@
 #include "kmerdb.h"
 #include "utils.h"
 
+namespace kcst {
+
+
 static std::vector<skey_t> EMPTY_VECTOR;
 
 map_kmer_db::map_kmer_db(int ksize)
@@ -38,5 +41,8 @@ map_kmer_db::kmer_hits(knum_t knum) const
     std::map<knum_t,std::vector<skey_t> >::const_iterator p = map_.find(knum);
     return p == map_.end() ? EMPTY_VECTOR : p->second;
 }
+
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

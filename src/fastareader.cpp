@@ -23,6 +23,9 @@
 #include "fastareader.h"
 #include "utils.h"
 
+namespace kcst {
+
+
 fasta_reader::fasta_reader(std::istream &is)
     : is_(is), lineno_(0)
 {
@@ -41,14 +44,25 @@ fasta_reader::next_sequence(sequence &seq)
         return false;
     }
 
-    if (line_[0] != '>')
-        raise_error("line %d: sequence header does not start with '>'", lineno_);
+        // parse header line
 
-    seq.header = line_;
+    if (line_[0] == '>') 
+    {
+        seq.header = line_;
 
-    std::string::const_iterator p = line_.begin();
-    while (++p != line_.end() && !std::isspace(*p)) /* skip to space or end */;
-    seq.id = std::string(line_, 1, p - line_.begin() - 1);
+        // extract seqid: whatever is between > and first whitespace
+        std::string::const_iterator p = line_.begin() + 1;
+        while (p != line_.end() && !std::isspace(*p))
+            ++p;
+        seq.id = std::string(line_, 1, p - line_.begin() - 1);
+    }
+    else // technically invalid FASTA but we tolerate
+    {
+        seq.id = "anonymous";
+        seq.header = ">anonymous";
+    }
+
+        // collect data lines
 
     seq.data.clear();
 
@@ -64,6 +78,10 @@ fasta_reader::next_sequence(sequence &seq)
         if (line_[0] == '>')
             break;
 
+        std::string::size_type pos = 0;
+        while ((pos = line_.find(' ', pos)) != std::string::npos)
+            line_.erase(pos, 1);
+
         seq.data.append(line_);
 
         line_.clear();
@@ -71,5 +89,7 @@ fasta_reader::next_sequence(sequence &seq)
 
     return true;
 }
+
+} // namespace kcst
 
 // vim: sts=4:sw=4:ai:si:et

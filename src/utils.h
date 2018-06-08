@@ -18,7 +18,11 @@
 #ifndef utils_h_INCLUDED
 #define utils_h_INCLUDED
 
+namespace kcst {
+
 extern void raise_error(const char* t, ...);
+
+}
 
 #endif // utils_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

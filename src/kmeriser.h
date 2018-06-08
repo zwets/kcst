@@ -21,6 +21,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace kcst {
+
 
 // knum_t - the number type used to store an encoded kmer,
 //
@@ -115,6 +117,9 @@ class kmeriser
         knum_t knum() const;
         std::vector<knum_t> knums();
 };
+
+
+} // namespace kcst
 
 #endif // kmeriser_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et
