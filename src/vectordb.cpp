@@ -25,15 +25,15 @@ vector_kmer_db::vector_kmer_db(int ksize)
 }
 
 void
-vector_kmer_db::add_kmer(knum kmer, skey key)
+vector_kmer_db::add_kmer(knum_t kmer, skey_t skey)
 {
-    vec_[kmer].push_back(key);
+    vec_[kmer].push_back(skey);
 }
 
-const std::vector<skey>&
-vector_kmer_db::kmer_hits(knum kmer) const
+const std::vector<skey_t>&
+vector_kmer_db::kmer_hits(knum_t knum) const
 {
-    return vec_[kmer];
+    return vec_[knum];
 }
 
 // vim: sts=4:sw=4:ai:si:et

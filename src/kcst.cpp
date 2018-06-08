@@ -30,7 +30,7 @@
 #include "utils.h"
 
 static const int MIN_KSIZE = 1;
-static const int MAX_KSIZE = 4 * sizeof(knum) - 1;
+static const int MAX_VARIANTS_PER_KMER = 16;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
 
@@ -44,10 +44,13 @@ static int ksize = DEFAULT_KSIZE;
 static int max_mem = DEFAULT_MEM;
 static int verbose = false;
 
-int main (int argc, char *argv[]) 
+int main (int, char *argv[]) 
 {
     std::string db_fname;
     std::string qry_fname;
+
+//    Add canonical kmerisation to kmerator
+//    Adjust the memory computation (halved!)
 
     try {
         while (*++argv) 
@@ -114,16 +117,16 @@ int main (int argc, char *argv[])
         hit_counter counter;
 
         fasta_reader reader(db_file);
+        kmerator k_ator(ksize, MAX_VARIANTS_PER_KMER);
         sequence seq;
 
         while (reader.next_sequence(seq))
         {
-            skey key = counter.add_target(seq.header);
-
-            kmerator k(seq.data.c_str(), seq.data.c_str() + seq.data.length(), ksize);
+            skey_t key = counter.add_target(seq.header);
+            k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
             do {
-                db->add_kmer(k.val(), key);
-            } while (k.inc());
+                db->add_kmer(k_ator.knum(), key);
+            } while (k_ator.inc());
         }
 
         std::cerr << "ok" << std::endl;
@@ -139,7 +142,7 @@ int main (int argc, char *argv[])
 
             if (!qry_file)
             {
-                std::cerr << "failed to open query file: " << qry_fname << std::cerr;
+                std::cerr << "failed to open query file: " << qry_fname << std::endl;
                 return 1;
             }
 
@@ -152,17 +155,18 @@ int main (int argc, char *argv[])
         }
 
         fasta_reader qry_reader(*is);
+        kmeriser k_iser(ksize);
         sequence qry;
 
         while (qry_reader.next_sequence(qry))
         {
-            kmeriser ki(qry.data.c_str(), qry.data.c_str() + qry.data.length(), ksize);
+            k_iser.set(qry.data.c_str(), qry.data.c_str() + qry.data.length());
 
             do {
-                const std::vector<skey>& hits = db->kmer_hits(ki.val());
-                for (std::vector<skey>::const_iterator p = hits.begin(); p != hits.end(); ++p)
+                const std::vector<skey_t>& hits = db->kmer_hits(k_iser.knum());
+                for (std::vector<skey_t>::const_iterator p = hits.begin(); p != hits.end(); ++p)
                     counter.count_hit(*p);
-            } while (ki.inc());
+            } while (k_iser.inc());
         }
 
         if (is != &std::cin)
@@ -179,7 +183,7 @@ int main (int argc, char *argv[])
         return 0;
     }
     catch (std::runtime_error e) {
-        std::cerr << "kcst: " << e.what() << std::endl;
+        std::cerr << std::endl << "kcst: " << e.what() << std::endl;
         return 1;
     }
 }

@@ -22,8 +22,8 @@
 #include <vector>
 #include <map>
 
-typedef long knum;  // kmer number
-typedef long skey;   // sequence key
+typedef std::uint_fast64_t knum_t;  // kmer number
+typedef std::uint32_t skey_t;   // sequence key
 
 class kmer_db
 {
@@ -35,8 +35,8 @@ class kmer_db
 
         int ksize() const { return ksize_; }
 
-        virtual void add_kmer(knum, skey) = 0;
-        virtual const std::vector<skey>& kmer_hits(knum kmer) const = 0;
+        virtual void add_kmer(knum_t, skey_t) = 0;
+        virtual const std::vector<skey_t>& kmer_hits(knum_t knum) const = 0;
 };
 
 extern kmer_db* new_kmer_db(int ksize, int max_mem);
@@ -44,25 +44,25 @@ extern kmer_db* new_kmer_db(int ksize, int max_mem);
 class vector_kmer_db : public kmer_db
 {
     private:
-        std::vector<std::vector<skey> > vec_;
+        std::vector<std::vector<skey_t> > vec_;
 
     public:
         vector_kmer_db(int ksize);
 
-        void add_kmer(knum kmer, skey key);
-        const std::vector<skey>& kmer_hits(knum kmer) const;
+        void add_kmer(knum_t knum, skey_t skey);
+        const std::vector<skey_t>& kmer_hits(knum_t knum) const;
 };
 
 class map_kmer_db : public kmer_db
 {
     private:
-        std::map<knum,std::vector<skey> > map_;
+        std::map<knum_t,std::vector<skey_t> > map_;
 
     public:
         map_kmer_db(int ksize);
 
-        void add_kmer(knum kmer, skey key);
-        const std::vector<skey>& kmer_hits(knum kmer) const;
+        void add_kmer(knum_t knum, skey_t skey);
+        const std::vector<skey_t>& kmer_hits(knum_t knum) const;
 };
 
 #endif // kmerdb_h_INCLUDED

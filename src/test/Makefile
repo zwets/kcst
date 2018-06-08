@@ -26,8 +26,8 @@ CXXFLAGS += -g -Wall -Wextra -pthread -std=c++11 -I$(USER_DIR)
 TESTS = all-tests
 
 # All Google Test headers.  Normally you shouldn't change this definition.
-GTEST_HEADERS = /usr/include/gtest/*.h \
-                /usr/include/gtest/internal/*.h
+GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
+                $(GTEST_DIR)/include/gtest/internal/*.h
 
 # House-keeping build targets.
 

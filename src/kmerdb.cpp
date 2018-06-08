@@ -25,20 +25,20 @@ kmer_db* new_kmer_db(int ksize, int max_mem)
 {
     kmer_db *res;
 
-    int kmer_bits = 2*ksize;
+    size_t kmer_bits = 2*ksize - 1;
 
-    if (kmer_bits > 8*sizeof(knum) - 1)
-        raise_error("kmer size %d not supported; recompile with knum defined as 'long long' to support kmer sizes up to %d",
-                ksize, 4*sizeof(long long)-1);
+    if (kmer_bits > 8*sizeof(knum_t) - 1)
+        raise_error("kmer size %d does not fit in %d bits; maybe recompile with different knum_t?",
+                ksize, 8*sizeof(knum_t));
 
     // Vector memory use in bytes is number of distinct kmers times size of an entry.
     // Distinct kmers are 4^ksize or 2^(2*ksize) or 1<<(2*ksize) counted in units.
     // Counted in M, that's 1<<(2*ksize-20) is 1<<(2*(ksize-10))
 
-    long long vec_mb = sizeof(std::vector<skey>) * (1L<<(2*(ksize < 11 ? 0 : ksize - 10)));
-    long long vec_gb = vec_mb >> 10;
+    knum_t vec_mb = sizeof(std::vector<skey_t>) * (1L<<(2*(ksize < 11 ? 0 : ksize - 10)));
+    knum_t vec_gb = vec_mb >> 10;
 
-    if (vec_gb > max_mem)
+    if (vec_gb > (knum_t) max_mem)
     {
         std::cerr << "memory use " << vec_gb << "G greater than " << max_mem << "G: using map database";
         res = new map_kmer_db(ksize);

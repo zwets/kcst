@@ -19,7 +19,7 @@
 #include "kmerdb.h"
 #include "utils.h"
 
-static std::vector<skey> EMPTY_VECTOR;
+static std::vector<skey_t> EMPTY_VECTOR;
 
 map_kmer_db::map_kmer_db(int ksize)
     : kmer_db(ksize)
@@ -27,15 +27,15 @@ map_kmer_db::map_kmer_db(int ksize)
 }
 
 void
-map_kmer_db::add_kmer(knum kmer, skey key)
+map_kmer_db::add_kmer(knum_t knum, skey_t skey)
 {
-    map_[kmer].push_back(key);
+    map_[knum].push_back(skey);
 }
 
-const std::vector<skey>&
-map_kmer_db::kmer_hits(knum kmer) const
+const std::vector<skey_t>&
+map_kmer_db::kmer_hits(knum_t knum) const
 {
-    std::map<knum,std::vector<skey> >::const_iterator p = map_.find(kmer);
+    std::map<knum_t,std::vector<skey_t> >::const_iterator p = map_.find(knum);
     return p == map_.end() ? EMPTY_VECTOR : p->second;
 }
 
