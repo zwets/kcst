@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdexcept>
+#include <list>
 #include <gtest/gtest.h>
 #include "kmeriser.h"
 
@@ -44,6 +46,56 @@ TEST(kmeriser_test, no_ksize_even) {
     delete r;
 }
 
+TEST(kmeriser_test, ksize_1) {
+    kmeriser r(1);
+    char seq[] = "a";
+    r.set(seq, seq+strlen(seq));
+    EXPECT_EQ(A_VAL,r.knum());
+    EXPECT_FALSE(r.inc());
 }
-// vim: sts=4:sw=4:ai:si:et
+
+TEST(kmeriser_test, reverse_1) {
+    kmeriser r(1);
+    char seq[] = "t";
+    r.set(seq, seq+strlen(seq));
+    EXPECT_EQ(A_VAL,r.knum());    // Note t read on rev strand, so A_VAL
+    EXPECT_FALSE(r.inc());
+}
+
+TEST(kmeriser_test, reverse_long) {
+    kmeriser r1(7), r2(7);
+    char seq[] = "acgattagcgatagggt";
+    char rev[] = "accctatcgctaatcgt";
+    r1.set(seq, seq+strlen(seq));
+    r2.set(rev, rev+strlen(rev));
+    std::list<knum_t> v1, v2;
+    do {
+        v1.push_back(r1.knum());
+        v2.push_front(r2.knum());
+    } while (r1.inc() && r2.inc());
+    EXPECT_EQ(v1, v2);
+}
+
+TEST(kmeriser_test, empty_seq) {
+    kmeriser r(1);
+    char seq[] = "";
+    r.set(seq, seq+strlen(seq));
+    EXPECT_THROW(r.knum(),std::runtime_error);
+}
+
+TEST(kmeriser_test, ksize_3) {
+    kmeriser r(3);
+    char seq[] = "acgtca";
+    r.set(seq, seq+strlen(seq));
+    EXPECT_EQ(6,r.knum()); // acg -> 00110
+    EXPECT_TRUE(r.inc());
+    EXPECT_EQ(6,r.knum()); // cgt -> acg -> 00110
+    EXPECT_TRUE(r.inc());
+    EXPECT_EQ(17,r.knum()); // gtc -> gac -> 10001
+    EXPECT_TRUE(r.inc());
+    EXPECT_EQ(28,r.knum()); // tca -> 11100
+    EXPECT_FALSE(r.inc());
+}
+
+} // namespace
 // vim: sts=4:sw=4:ai:si:et
