@@ -96,8 +96,32 @@ kmerator::knum() const
     if (!(pcur_ < pend_))
         raise_error("kmerator read attempted past right bound of sequence");
 
-    for (std::vector<baserator>::const_iterator p = baserators_.begin(); p != baserators_.end(); ++p)
-        res = (res<<2) | p->knum();
+    std::vector<baserator>::const_iterator pmid = baserators_.begin() + (ksize_ / 2);
+
+    if (!(pmid->knum() & 2)) // middle of kmer is a or c, canonical is forward strand
+    {
+        std::vector<baserator>::const_iterator p = baserators_.begin() - 1;
+
+        while (++p != pmid)
+            res = (res<<2) | p->knum();
+
+        res = (res<<1) | p->knum(); // central base encoded as 1 bit: a->0, c->1
+        
+        while (++p != baserators_.end())
+            res = (res<<2) | p->knum();
+    }
+    else // middle base is g or t, canonical kmer is the reverse complement
+    {
+        std::vector<baserator>::const_iterator p = baserators_.end();
+
+        while (--p != pmid)
+            res = (res<<2) | (p->knum() ^ 3);
+
+        res = (res<<1) | (p->knum() ^ 3);   // center t->a=0, g->c=1
+        
+        while (p-- != baserators_.begin())
+            res = (res<<2) | (p->knum() ^ 3);
+    }
 
     return res;
 }

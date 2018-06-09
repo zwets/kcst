@@ -19,14 +19,12 @@ alleles at once.
 
 ## Running
 
-    ```bash
     # Proper argument handling is WIP
     ./kcst [OPTIONS] DBFILE <QUERYFILE
-    ```
+
 
 ## Building
 
-    ```bash
     # Compile the sources
     cd src
     make
@@ -34,7 +32,7 @@ alleles at once.
     # Optionally compile and run unit tests
     cd src/test
     make test
-    ```
+   
 
 ## Installation
 

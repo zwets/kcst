@@ -77,13 +77,6 @@ base_value(char c)
 }
 
 
-inline knum_t
-comp_base_value(char c)
-{
-    return base_value(c) ^ 3;
-}
-
-
 knum_t
 kmeriser::knum() const
 {
@@ -93,30 +86,31 @@ kmeriser::knum() const
         raise_error("kmeriser read attempted past right bound of sequence");
 
     const char *pmid = pcur_ + (ksize_ / 2);
+    const char *pstop = pcur_ + ksize_;
 
-    if (!(base_value(*pmid) & 2))  // a or c, so encode forward strand
+    if (!(base_value(*pmid) & 2))  // middle base is a or c, canonical is forward strand
     {
-        const char *p = pcur_-1;
+        const char *p = pcur_ - 1;
 
-        while (++p < pmid)
-            res = (res << 2) | base_value(*p);
+        while (++p != pmid)
+            res = (res<<2) | base_value(*p);
 
-        res = (res << 1) | (base_value(*p) & 1);        // a->0, c->1
+        res = (res<<1) | base_value(*p); // central base encoded as 1 bit: a->0, c->1
 
-        while (++p < pcur_ + ksize_)
-            res = (res << 2) | base_value(*p);
+        while (++p != pstop)
+            res = (res<<2) | base_value(*p);
     }
-    else
+    else // middle base is g or t, canonical kmer is the reverse complement
     {
-        const char *p = pcur_ + ksize_;
+        const char *p = pstop;
 
-        while (--p > pmid)
-            res = (res << 2) | comp_base_value(*p);
+        while (--p != pmid)
+            res = (res<<2) | (base_value(*p) ^ 3); // xor with 3 is complementary base
 
-        res = (res << 1) | (comp_base_value(*p) & 1);   // t->a->0, g->c->1
+        res = (res<<1) | (base_value(*p) ^ 3); // t->a->0, g->c->1
 
-        while (--p >= pcur_)
-            res = (res << 2) | comp_base_value(*p);
+        while (p-- != pcur_)
+            res = (res<<2) | (base_value(*p) ^ 3);
     }
 
     return res;
