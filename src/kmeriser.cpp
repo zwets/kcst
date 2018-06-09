@@ -52,7 +52,7 @@ kmeriser::set(const char *begin, const char *end)
 bool
 kmeriser::inc()
 {
-    return ++pcur_ < pend_;
+    return pcur_ < pend_ && ++pcur_ < pend_;
 }
 
 

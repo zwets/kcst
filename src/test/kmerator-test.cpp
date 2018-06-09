@@ -84,6 +84,30 @@ TEST(kmerator_test, empty_seq) {
     EXPECT_THROW(r.knum(),std::runtime_error);
 }
 
+TEST(kmerator_test, set_past_end) {
+    kmerator r(3);
+    char seq[] = "acg";
+    EXPECT_FALSE(r.set(seq+1, seq+3));
+    EXPECT_FALSE(r.inc());
+    EXPECT_THROW(r.knum(), std::runtime_error);
+}
+
+TEST(kmerator_test, read_past_end) {
+    kmerator r(3);
+    char seq[] = "acg";
+    EXPECT_TRUE(r.set(seq, seq+3));
+    EXPECT_FALSE(r.inc());
+    EXPECT_THROW(r.knum(), std::runtime_error);
+}
+
+TEST(kmerator_test, knums_expires) {
+    kmerator r(3);
+    char seq[] = "cgtatatgca";
+    r.set(seq,seq+strlen(seq));
+    r.knums();
+    EXPECT_FALSE(r.inc());
+}
+
 TEST(kmerator_test, ksize_3) {
     kmerator r(3);
     char seq[] = "acgtca";
@@ -98,6 +122,48 @@ TEST(kmerator_test, ksize_3) {
     EXPECT_FALSE(r.inc());
 }
 
-} // namespace
+TEST(kmerator_test, move_halfway) {
+    kmerator r(3);
+    char seq[] = "acgtca";
+    r.set(seq, seq+6);
+    EXPECT_EQ(6,r.knum()); // acg -> 00110
+    EXPECT_TRUE(r.inc());
+    r.set(seq+2, seq+6);
+    EXPECT_EQ(17,r.knum()); // gtc -> gac -> 10001
+    EXPECT_TRUE(r.inc());
+    EXPECT_EQ(28,r.knum()); // tca -> 11100
+    EXPECT_FALSE(r.inc());
+}
 
+TEST(kmerator_test, variant_limit) {
+    kmerator r(3);
+    char seq[] = "abcdg";   // variants 1x3x1x3 = 9 is too many
+    r.set(seq, seq+5);
+    EXPECT_THROW(r.knums(),std::runtime_error);
+}
+
+TEST(kmerator_test, set_limit) {
+    kmerator r(3,1);
+    char seq[] = "acsct";   // variants 2 is too many
+    r.set(seq, seq+5);
+    EXPECT_THROW(r.knums(),std::runtime_error);
+}
+
+TEST(kmerator_test, no_limit) {
+    kmerator r(3,0);
+    char seq[] = "nnnnn";
+    r.set(seq, seq+5);
+    EXPECT_EQ(64+64+64,r.knums().size());
+}
+
+TEST(kmerator_test, full_alphabet) {
+    kmerator r(7,0);
+    char seq[] = "abcdghkmnrstvwy";
+    EXPECT_TRUE(r.set(seq,seq+sizeof(seq)-1));
+    while (r.inc())
+	EXPECT_TRUE(r.knum() < 0x2000); // tttcttt -> 1 1111 1111 1111
+}
+
+
+} // namespace
 // vim: sts=4:sw=4:ai:si:et

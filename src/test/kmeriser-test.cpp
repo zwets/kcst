@@ -25,7 +25,6 @@ using namespace kcst;
 
 namespace {
 
-const char  LOWER_LETTERS[] = "acgtwsmkrybdhvn";
 const int   A_VAL = 0, C_VAL = 1, G_VAL = 2, T_VAL = 3;
 
 TEST(kmeriser_test, no_ksize_zero) {
@@ -79,8 +78,32 @@ TEST(kmeriser_test, reverse_long) {
 TEST(kmeriser_test, empty_seq) {
     kmeriser r(1);
     char seq[] = "";
-    r.set(seq, seq+strlen(seq));
+    EXPECT_FALSE(r.set(seq, seq+strlen(seq)));
     EXPECT_THROW(r.knum(),std::runtime_error);
+}
+
+TEST(kmeriser_test, set_past_end) {
+    kmeriser r(3);
+    char seq[] = "acg";
+    EXPECT_FALSE(r.set(seq+1, seq+3));
+    EXPECT_FALSE(r.inc());
+    EXPECT_THROW(r.knum(), std::runtime_error);
+}
+
+TEST(kmeriser_test, read_past_end) {
+    kmeriser r(3);
+    char seq[] = "acg";
+    EXPECT_TRUE(r.set(seq, seq+3));
+    EXPECT_FALSE(r.inc());
+    EXPECT_THROW(r.knum(), std::runtime_error);
+}
+
+TEST(kmeriser_test, knums_expires) {
+    kmeriser r(3);
+    char seq[] = "cgtatatgca";
+    r.set(seq,seq+strlen(seq));
+    r.knums();
+    EXPECT_FALSE(r.inc());
 }
 
 TEST(kmeriser_test, ksize_3) {
@@ -96,6 +119,32 @@ TEST(kmeriser_test, ksize_3) {
     EXPECT_EQ(28,r.knum()); // tca -> 11100
     EXPECT_FALSE(r.inc());
 }
+
+TEST(kmeriser_test, move_halfway) {
+    kmeriser r(3);
+    char seq[] = "acgtca";
+    r.set(seq, seq+6);
+    EXPECT_EQ(6,r.knum()); // acg -> 00110
+    EXPECT_TRUE(r.inc());
+    r.set(seq+2, seq+6);
+    EXPECT_EQ(17,r.knum()); // gtc -> gac -> 10001
+    EXPECT_TRUE(r.inc());
+    EXPECT_EQ(28,r.knum()); // tca -> 11100
+    EXPECT_FALSE(r.inc());
+}
+
+TEST(kmeriser_test, same_as_ator) {
+    kmeriser ki(5); kmerator ka(5);
+    char seq[] = "acgtaaccggttagacatgtacgggattaatag";
+    ki.set(seq, seq+sizeof(seq)-1);
+    ka.set(seq, seq+sizeof(seq)-1);
+    do {
+        EXPECT_EQ(ki.knum(), ka.knum());
+    } while (ki.inc() && ka.inc());
+    EXPECT_FALSE(ki.inc());
+    EXPECT_FALSE(ka.inc());
+}
+
 
 } // namespace
 // vim: sts=4:sw=4:ai:si:et

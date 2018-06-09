@@ -43,10 +43,8 @@ kmerator::set(const char *begin, const char *end)
     if (pcur_ < pend_)
         for (int i = 0; i < ksize_; ++i)
             baserators_[i].set(pcur_[i]);
-    else
-        return false;
 
-    return true;
+    return pcur_ < pend_;
 }
 
 
@@ -55,10 +53,12 @@ kmerator::inc()
 {
     bool done = false;
 
+    if (pcur_ >= pend_) // bail early if already walked off the end
+        return false;
+
     // try bumping the baserators to the next variant at pcur_
 
     std::vector<baserator>::iterator p = baserators_.end();
-
     while (!done && p-- != baserators_.begin())
         done = p->inc();
 
