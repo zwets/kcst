@@ -1,4 +1,4 @@
-/* kmeriser.h
+/* kmerise.h
  * 
  * Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
  *
@@ -15,8 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef kmeriser_h_INCLUDED
-#define kmeriser_h_INCLUDED
+#ifndef kmerise_h_INCLUDED
+#define kmerise_h_INCLUDED
 
 #include <vector>
 #include <cstdint>
@@ -121,5 +121,5 @@ class kmeriser
 
 } // namespace kcst
 
-#endif // kmeriser_h_INCLUDED
+#endif // kmerise_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

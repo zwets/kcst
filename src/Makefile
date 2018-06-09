@@ -2,7 +2,7 @@
 
 OBJS = kcst.o fastareader.o hitcounter.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
 
-HDRS = fastareader.h hitcounter.h kmerdb.h kmeriser.h utils.h
+HDRS = fastareader.h hitcounter.h kmerdb.h kmerise.h utils.h
 
 CXXFLAGS += -O2 -g -Wall -Wextra -pthread -std=c++11
 

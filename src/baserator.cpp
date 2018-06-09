@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "kmeriser.h"
+#include "kmerise.h"
 #include "utils.h"
 
 namespace kcst {

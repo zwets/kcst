@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <list>
 #include <gtest/gtest.h>
-#include "kmeriser.h"
+#include "kmerise.h"
 
 using namespace kcst;
 

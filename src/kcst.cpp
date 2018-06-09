@@ -25,7 +25,7 @@
 
 #include "fastareader.h"
 #include "hitcounter.h"
-#include "kmeriser.h"
+#include "kmerise.h"
 #include "kmerdb.h"
 #include "utils.h"
 
