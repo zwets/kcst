@@ -24,7 +24,8 @@
 namespace kcst {
 
 
-kmer_db* new_kmer_db(int ksize, int max_mem)
+kmer_db* 
+kmer_db::new_db(int ksize, int max_mem)
 {
     kmer_db *res;
 

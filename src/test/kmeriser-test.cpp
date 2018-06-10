@@ -35,7 +35,7 @@ TEST(kmeriser_test, no_ksize_zero) {
 
 TEST(kmeriser_test, no_ksize_too_big) {
     kmeriser *r = 0;
-    EXPECT_THROW(r = new kmeriser(MAX_KSIZE+1), std::runtime_error);
+    EXPECT_THROW(r = new kmeriser(kmeriser::max_ksize+1), std::runtime_error);
     delete r;
 }
 

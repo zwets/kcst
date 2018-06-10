@@ -37,7 +37,7 @@ TEST(kmerator_test, no_ksize_zero) {
 
 TEST(kmerator_test, no_ksize_too_big) {
     kmerator *r = 0;
-    EXPECT_THROW(r = new kmerator(MAX_KSIZE+1), std::runtime_error);
+    EXPECT_THROW(r = new kmerator(kmerator::max_ksize+1), std::runtime_error);
     delete r;
 }
 
