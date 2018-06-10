@@ -34,8 +34,8 @@ static const knum_t BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, 
 kmeriser::kmeriser(int ksize)
     : pcur_(0), pend_(0), ksize_(ksize)
 {
-    if (ksize < 1 || ksize > MAX_KSIZE || !(ksize & 1))
-        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, MAX_KSIZE);
+    if (ksize < 1 || ksize > max_ksize || !(ksize & 1))
+        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, max_ksize);
 }
 
 

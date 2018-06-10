@@ -25,8 +25,8 @@ namespace kcst {
 kmerator::kmerator(int ksize, int max_variants)
     : pcur_(0), pend_(0), ksize_(ksize), variant_(0), max_variants_(max_variants)
 {
-    if (ksize < 1 || ksize > MAX_KSIZE || !(ksize & 1))
-        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, MAX_KSIZE);
+    if (ksize < 1 || ksize > max_ksize || !(ksize & 1))
+        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, max_ksize);
 
     for (int i = 0; i < ksize_; ++i)
         baserators_.push_back(baserator());

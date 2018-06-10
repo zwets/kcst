@@ -31,7 +31,6 @@
 
 using namespace kcst;
 
-static const int MIN_KSIZE = 1;
 static const int MAX_VARIANTS_PER_KMER = 16;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
@@ -64,7 +63,7 @@ int main (int, char *argv[])
             else if (!std::strcmp("-k", *argv) && *++argv)
             {
                 ksize = std::atoi(*argv);
-                if (ksize < MIN_KSIZE || ksize > MAX_KSIZE) 
+                if (ksize < 1 || ksize > kmeriser::max_ksize) 
                     raise_error("invalid KSIZE: %s", *argv);
             }
             else if (!std::strcmp("-m", *argv) && *++argv)
@@ -112,7 +111,7 @@ int main (int, char *argv[])
             return 1;
         }
 
-        kmer_db *db = new_kmer_db(ksize, max_mem);
+        kmer_db *db = kmer_db::new_db(ksize, max_mem);
 
         std::cerr << "ok\nreading database sequences ... ";
 
@@ -124,10 +123,10 @@ int main (int, char *argv[])
 
         while (reader.next_sequence(seq))
         {
-            skey_t key = counter.add_target(seq.header);
+            kloc_t loc = counter.add_target(seq.header);
             k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
             do {
-                db->add_kmer(k_ator.knum(), key);
+                db->add_kloc(k_ator.knum(), loc);
             } while (k_ator.inc());
         }
 
@@ -165,7 +164,7 @@ int main (int, char *argv[])
             k_iser.set(qry.data.c_str(), qry.data.c_str() + qry.data.length());
 
             do {
-                const std::vector<skey_t>& hits = db->kmer_hits(k_iser.knum());
+                const std::vector<skey_t>& hits = db->get_klocs(k_iser.knum());
                 for (std::vector<skey_t>::const_iterator p = hits.begin(); p != hits.end(); ++p)
                     counter.count_hit(*p);
             } while (k_iser.inc());

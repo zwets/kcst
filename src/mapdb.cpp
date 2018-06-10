@@ -22,7 +22,7 @@
 namespace kcst {
 
 
-static std::vector<skey_t> EMPTY_VECTOR;
+static std::vector<kloc_t> EMPTY_VECTOR;
 
 map_kmer_db::map_kmer_db(int ksize)
     : kmer_db(ksize)
@@ -30,15 +30,15 @@ map_kmer_db::map_kmer_db(int ksize)
 }
 
 void
-map_kmer_db::add_kmer(knum_t knum, skey_t skey)
+map_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
 {
-    map_[knum].push_back(skey);
+    map_[kmer].push_back(loc);
 }
 
-const std::vector<skey_t>&
-map_kmer_db::kmer_hits(knum_t knum) const
+const std::vector<kloc_t>&
+map_kmer_db::get_klocs(kmer_t kmer) const
 {
-    std::map<knum_t,std::vector<skey_t> >::const_iterator p = map_.find(knum);
+    std::map<kmer_t,std::vector<kloc_t> >::const_iterator p = map_.find(kmer);
     return p == map_.end() ? EMPTY_VECTOR : p->second;
 }
 

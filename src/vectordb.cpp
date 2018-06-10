@@ -22,21 +22,23 @@
 namespace kcst {
 
 
+static std::vector<kloc_t> EMPTY_VECTOR;
+
 vector_kmer_db::vector_kmer_db(int ksize)
     : kmer_db(ksize), vec_(1L<<(2*ksize))
 {
 }
 
 void
-vector_kmer_db::add_kmer(knum_t kmer, skey_t skey)
+vector_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
 {
-    vec_[kmer].push_back(skey);
+    vec_[kmer].push_back(loc);
 }
 
-const std::vector<skey_t>&
-vector_kmer_db::kmer_hits(knum_t knum) const
+const std::vector<kloc_t>&
+vector_kmer_db::get_klocs(kmer_t kmer) const
 {
-    return vec_[knum];
+    return vec_[kmer];
 }
 
 
