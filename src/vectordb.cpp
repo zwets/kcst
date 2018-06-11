@@ -50,14 +50,14 @@ ptrvec_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
 {
     std::vector<kloc_t>::size_type pos = klocs_ptrs_[kmer];
 
-    if (!pos) {
+    if (!pos)
+    {
         pos = klocs_vecs_.size();
+        klocs_ptrs_[kmer] = pos;
         klocs_vecs_.push_back(std::vector<kloc_t>(1, loc));
     }
-    else {
-        klocs_ptrs_[kmer] = pos;
+    else
         klocs_vecs_[pos].push_back(loc);
-    }
 }
 
 const std::vector<kloc_t>&

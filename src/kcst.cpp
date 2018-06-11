@@ -31,7 +31,7 @@
 
 using namespace kcst;
 
-static const int MAX_VARIANTS_PER_KMER = 16;
+static const int MAX_VARIANTS_PER_KMER = 64;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
 
@@ -49,9 +49,6 @@ int main (int, char *argv[])
 {
     std::string db_fname;
     std::string qry_fname;
-
-//    Add canonical kmerisation to kmerator
-//    Adjust the memory computation (halved!)
 
     try {
         while (*++argv) 
