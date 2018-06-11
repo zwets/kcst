@@ -31,7 +31,7 @@ typedef std::uint_fast64_t kmer_t;
 
 // kloc_t - the type used to store a kmer location
 //
-typedef std::uint32_t kloc_t;
+typedef std::uint64_t kloc_t;
 
 
 // Abstract base class holding a collection of kmer->location mappings.
@@ -67,15 +67,10 @@ class kmer_db
 // storing and looking up very quick.  Its downsize is its O(4^ksize) memory
 // complexity, which gets big quickly.
 //
-// For instance, at ksize 15 there are ((4^ksize)/2 = 1G/2) canonical kmers,
-// most never encountered.  If we store kloc_t in vectors in the index vector,
-// and empty vector<kloc_t> is 48 bytes, then we use 24GB for just this index
-// (before any kloc_t are stored).
-//
 class vector_kmer_db : public kmer_db
 {
     private:
-        std::vector<std::vector<kloc_t> > vec_;
+        std::vector<std::vector<kloc_t> > klocs_;
 
     public:
         vector_kmer_db(int ksize);
@@ -85,7 +80,25 @@ class vector_kmer_db : public kmer_db
 };
 
 
-// Concrete kmer_db class that holds the kmer index in a map (red black tree).
+// More compact vector_db (should be about 6 times less mem consumption),
+// but uses one indirection.
+//
+class ptrvec_kmer_db : public kmer_db
+{
+    private:
+        std::vector<std::vector<kloc_t>::size_type> klocs_ptrs_;
+        std::vector<std::vector<kloc_t> > klocs_vecs_;
+
+    public:
+        ptrvec_kmer_db(int ksize);
+
+        void add_kloc(kmer_t, kloc_t);
+        const std::vector<kloc_t>& get_klocs(kmer_t) const;
+};
+
+
+
+// Concrete kmer_db class that holds the kmer index in a map (red-black tree).
 //
 // In terms of storage, this is much more efficient than the vector variant,
 // as it only stores kmers we actually encounter.  This number is bound by the

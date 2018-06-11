@@ -29,26 +29,33 @@ kmer_db::new_db(int ksize, int max_mem)
 {
     kmer_db *res;
 
-    size_t kmer_bits = 2*ksize - 1;
+    int kbits = 2*ksize - 1;
+    int max_kbits = 8*sizeof(kmer_t) - 1;
+    int max_ksize = (max_kbits + 1)/2;
 
-    if (kmer_bits > 8*sizeof(kmer_t) - 1)
-        raise_error("kmer size %d does not fit in %d bits; maybe recompile with different kmer_t?",
-                ksize, 8*sizeof(kmer_t));
+    if (kbits > max_kbits)
+        raise_error("kmer size %d is larger than max supported %d"
+                " (it requires %d bits but kmerdb was compiled for %d bits);"
+                " either reduce kmer size, or recompile with a larger kmer_t",
+                ksize, max_ksize, kbits, max_kbits);
 
-    // Vector memory use in bytes is number of distinct kmers times size of an entry.
-    // Distinct kmers are 4^ksize or 2^(2*ksize) or 1<<(2*ksize) counted in units.
-    // Counted in M, that's 1<<(2*ksize-20) is 1<<(2*(ksize-10))
+    // Determine the implementation that fits max_mem GB
 
-    kmer_t vec_mb = sizeof(std::vector<kloc_t>) * (1L<<(2*(ksize < 11 ? 0 : ksize - 10)));
-    kmer_t vec_gb = vec_mb >> 10;
+    kmer_t vec_mb = sizeof(std::vector<kloc_t>) * (static_cast<std::uintmax_t>(1) << (kbits > 20 ? kbits - 20 : 0));
+    kmer_t ptr_mb = vec_mb * sizeof(std::vector<kloc_t>::size_type) / sizeof(std::vector<kloc_t>);
+    kmer_t max_mb = static_cast<std::uintmax_t>(max_mem) << 10;
 
-    if (vec_gb > (kmer_t) max_mem)
+    if (ptr_mb > max_mb)
     {
-        std::cerr << "memory use " << vec_gb << "G greater than " << max_mem << "G: using map database";
+        std::cerr << std::endl << "Vector or pointer memory (" << (ptr_mb>>10) << "G) would exceed " << (max_mb>>10) << "G: using map database" << std::endl;
         res = new map_kmer_db(ksize);
     }
-    else
+    else if (vec_mb > max_mb)
     {
+        std::cerr << "Vector memory (" << (vec_mb>>10) << "G) would exceed " << (max_mb>>10) << "G limit; using pointer database (" << (ptr_mb>>10) << "G)" << std::endl;
+        res = new ptrvec_kmer_db(ksize);
+    }
+    else {
         res = new vector_kmer_db(ksize);
     }
 

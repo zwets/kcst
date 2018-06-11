@@ -164,8 +164,8 @@ int main (int, char *argv[])
             k_iser.set(qry.data.c_str(), qry.data.c_str() + qry.data.length());
 
             do {
-                const std::vector<skey_t>& hits = db->get_klocs(k_iser.knum());
-                for (std::vector<skey_t>::const_iterator p = hits.begin(); p != hits.end(); ++p)
+                const std::vector<kloc_t>& hits = db->get_klocs(k_iser.knum());
+                for (std::vector<kloc_t>::const_iterator p = hits.begin(); p != hits.end(); ++p)
                     counter.count_hit(*p);
             } while (k_iser.inc());
         }
