@@ -23,7 +23,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "fastareader.h"
+#include "seqreader.h"
 #include "hitcounter.h"
 #include "kmerise.h"
 #include "kmerdb.h"
@@ -38,7 +38,7 @@ static const int DEFAULT_MEM = 16; // GB
 static const std::string USAGE("\n"
 "Usage: kcst [-k KSIZE] [-v] DATABASE [QUERIES]\n"
 "\n"
-"  Read FASTA DATABASE, then read FASTA QUERIES on stdin.\n"
+"  Read FASTA DATABASE, then read QUERIES on stdin.\n"
 "\n");
 
 static int ksize = DEFAULT_KSIZE;
@@ -117,11 +117,11 @@ int main (int, char *argv[])
 
         hit_counter counter;
 
-        fasta_reader reader(db_file);
+        sequence_reader reader(db_file, sequence_reader::fasta);
         kmerator k_ator(ksize, MAX_VARIANTS_PER_KMER);
         sequence seq;
 
-        while (reader.next_sequence(seq))
+        while (reader.next(seq))
         {
             kloc_t loc = counter.add_target(seq.header);
             k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
@@ -152,14 +152,14 @@ int main (int, char *argv[])
         }
         else
         {
-            std::cout << "please enter query sequence: " << std::endl;
+            std::cout << "please enter fasta, fastq, or base sequence data: " << std::endl;
         }
 
-        fasta_reader qry_reader(*is);
+        sequence_reader qry_reader(*is);
         kmeriser k_iser(ksize);
         sequence qry;
 
-        while (qry_reader.next_sequence(qry))
+        while (qry_reader.next(qry))
         {
             k_iser.set(qry.data.c_str(), qry.data.c_str() + qry.data.length());
 

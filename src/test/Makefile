@@ -65,7 +65,10 @@ gtest_main.a : gtest-all.o gtest_main.o
 
 USER_HEADERS = $(USER_DIR)/kmerise.h
 
-USER_OBJS = kmeriser.o kmerator.o baserator.o utils.o
+USER_OBJS = seqreader.o kmeriser.o kmerator.o baserator.o utils.o
+
+seqreader.o : $(USER_DIR)/seqreader.cpp $(USER_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 kmeriser.o : $(USER_DIR)/kmeriser.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
@@ -81,15 +84,18 @@ utils.o : $(USER_DIR)/utils.cpp $(USER_HEADERS)
 
 # Our test objs
 
-TEST_OBJS = kmeriser-test.o kmerator-test.o baserator-test.o
+TEST_OBJS = seqreader-test.o kmeriser-test.o kmerator-test.o baserator-test.o
 
-baserator-test.o : baserator-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+seqreader-test.o : seqreader-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+kmeriser-test.o : kmeriser-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 kmerator-test.o : kmerator-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
-kmeriser-test.o : kmeriser-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+baserator-test.o : baserator-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 # The all-tests executable.  A test should link with either gtest.a or
