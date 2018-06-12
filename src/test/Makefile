@@ -92,14 +92,20 @@ utils.o : $(USER_DIR)/utils.cpp $(USER_HEADERS)
 
 # Our test objs
 
-TEST_OBJS = ptrvecdb-test.o vectordb-test.o mapdb-test.o \
+TEST_OBJS = ptrvecdb-test.o vectordb-test.o mapdb-test.o multimapdb-test.o \
 	    seqreader-test.o \
 	    kmeriser-test.o kmerator-test.o baserator-test.o
+
+multimapdb-test.o : multimapdb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 ptrvecdb-test.o : ptrvecdb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 vectordb-test.o : vectordb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+ptrmapdb-test.o : ptrmapdb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 mapdb-test.o : mapdb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)

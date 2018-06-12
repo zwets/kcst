@@ -80,13 +80,22 @@ class vector_kmer_db : public kmer_db
 };
 
 
-// More compact vector_db (should be about 6 times less mem consumption),
-// but uses one indirection.
+// More compact vector_db.  Doesn't store the vectors of klocs in the kmer
+// vector, but in their own vector, and only store pointers (offsets rather)
+// in the large vector.
+//
+// In computation this costs an extra indirection, but (a) the large vector
+// is smaller (because it has uints instead of vector<uint>), and (b) the
+// number of vector<uint> is much smaller because they're only created for
+// kmers that are hit.
+//
+// This has the additional advantage of being able to query it for just the
+// kloc vectors (skipping all the 0 entries in the big vector).
 //
 class ptrvec_kmer_db : public kmer_db
 {
     private:
-        std::vector<std::vector<kloc_t>::size_type> klocs_ptrs_;
+        std::vector<std::vector<std::vector<kloc_t> >::size_type> klocs_ptrs_;
         std::vector<std::vector<kloc_t> > klocs_vecs_;
 
     public:
@@ -95,7 +104,6 @@ class ptrvec_kmer_db : public kmer_db
         void add_kloc(kmer_t, kloc_t);
         const std::vector<kloc_t>& get_klocs(kmer_t) const;
 };
-
 
 
 // Concrete kmer_db class that holds the kmer index in a map (red-black tree).
@@ -116,6 +124,47 @@ class map_kmer_db : public kmer_db
 
         void add_kloc(kmer_t, kloc_t);
         const std::vector<kloc_t>& get_klocs(kmer_t) const;
+};
+
+
+// More compact map_kmer_db, analogous to ptrvec_kmer_db.  We save space due
+// to the smaller objects in the map, but incur the cost of one indirection.
+//
+class ptrmap_kmer_db : public kmer_db
+{
+    private:
+        std::map<kmer_t,std::vector<std::vector<kloc_t> >::size_type> ptrmap_;
+        std::vector<std::vector<kloc_t> > klocs_vecs_;
+
+    public:
+        ptrmap_kmer_db(int ksize);
+
+        void add_kloc(kmer_t, kloc_t);
+        const std::vector<kloc_t>& get_klocs(kmer_t) const;
+};
+
+
+// Not a kmerdb subclass, but possibly a very convenient implementation using
+// a multimap.
+//
+class multimap_kmer_db
+{
+    public:
+        typedef typename std::multimap<kmer_t,kloc_t>::const_iterator iter;
+        typedef typename std::pair<iter,iter> iter_pair;
+
+    private:
+        std::multimap<kmer_t,kloc_t> map_;
+
+    public:
+        void add_kloc(kmer_t kmer, kloc_t loc) 
+            { map_.insert(std::make_pair(kmer, loc)); }
+
+        const iter_pair get_klocs() const 
+            { return std::make_pair(map_.cbegin(), map_.cend()); }
+
+        const iter_pair get_klocs(kmer_t kmer) const 
+            { return map_.equal_range(kmer); }
 };
 
 
