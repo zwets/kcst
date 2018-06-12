@@ -97,6 +97,8 @@ int main (int, char *argv[])
             return 1;
         }
 
+        // HANDLE DATABASE
+
         std::cerr << "creating database ... ";
 
         std::ifstream db_file;
@@ -130,6 +132,8 @@ int main (int, char *argv[])
         std::cerr << "ok" << std::endl;
 
         db_file.close();
+
+        // HANDLE QUERY
 
         std::ifstream qry_file;
         std::istream *is = &std::cin;

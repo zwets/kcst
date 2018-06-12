@@ -23,47 +23,29 @@ namespace kcst {
 
 
 vector_kmer_db::vector_kmer_db(int ksize)
-    : kmer_db(ksize), klocs_(1L<<(2*ksize-1))
+    : vec_ptrs_(1L<<(2*ksize-1), 0)
 {
 }
 
 void
 vector_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
 {
-    klocs_[kmer].push_back(loc);
+    kcnt_t pos = vec_ptrs_[kmer];
+
+    if (!pos)
+    {
+        pos = static_cast<kcnt_t>(kloc_vecs_.size());
+        kloc_vecs_.push_back(std::vector<kloc_t>(1, loc));
+        vec_ptrs_[kmer] = pos;
+    }
+    else
+        kloc_vecs_[pos].push_back(loc);
 }
 
 const std::vector<kloc_t>&
 vector_kmer_db::get_klocs(kmer_t kmer) const
 {
-    return klocs_[kmer];
-}
-
-
-ptrvec_kmer_db::ptrvec_kmer_db(int ksize)
-    : kmer_db(ksize), klocs_ptrs_(1L<<(2*ksize-1), 0), klocs_vecs_(1 /* note we put one at pos 0 */ )
-{
-}
-
-void
-ptrvec_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
-{
-    std::vector<kloc_t>::size_type pos = klocs_ptrs_[kmer];
-
-    if (!pos)
-    {
-        pos = klocs_vecs_.size();
-        klocs_vecs_.push_back(std::vector<kloc_t>(1, loc));
-        klocs_ptrs_[kmer] = pos;
-    }
-    else
-        klocs_vecs_[pos].push_back(loc);
-}
-
-const std::vector<kloc_t>&
-ptrvec_kmer_db::get_klocs(kmer_t kmer) const
-{
-    return klocs_vecs_[klocs_ptrs_[kmer]];
+    return kloc_vecs_[vec_ptrs_[kmer]];
 }
 
 
