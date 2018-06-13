@@ -18,6 +18,7 @@
 #ifndef kmerdb_h_INCLUDED
 #define kmerdb_h_INCLUDED
 
+#include <iostream>
 #include <vector>
 #include <map>
 
@@ -49,17 +50,28 @@ typedef std::uint32_t kcnt_t;
 class kmer_db
 {
     public:
-        static kmer_db* new_db(int ksize, int mem_gb = 16);
+        enum db_type { optimal, vector, map };
+
+    public:
+        static kmer_db* new_db(int ksize, int mem_gb = 16, db_type = optimal);
+        static kmer_db* read_db(std::istream&, int mem_gb = 16, db_type = optimal);
 
     protected:
         std::vector<std::vector<kloc_t> > kloc_vecs_;
+        int ksize_;
 
+        virtual std::istream& read(std::istream&);
+        
     public:
-        kmer_db() : kloc_vecs_(1) { }
+        kmer_db(int ksize) : kloc_vecs_(1), ksize_(ksize) { }
         virtual ~kmer_db() { }
+
+        int ksize() { return ksize_; }
 
         virtual void add_kloc(kmer_t, kloc_t) = 0;
         virtual const std::vector<kloc_t>& get_klocs(kmer_t) const = 0;
+
+        virtual std::ostream& write(std::ostream&) const;
 };
 
 
@@ -74,11 +86,16 @@ class vector_kmer_db : public kmer_db
     private:
         std::vector<kcnt_t> vec_ptrs_;
 
+    protected:
+        std::istream& read(std::istream&);
+
     public:
         vector_kmer_db(int ksize);
 
         void add_kloc(kmer_t, kloc_t);
         const std::vector<kloc_t>& get_klocs(kmer_t) const;
+
+        std::ostream& write(std::ostream&) const;
 };
 
 
@@ -95,9 +112,16 @@ class map_kmer_db : public kmer_db
     private:
         std::map<kmer_t,kcnt_t> vec_ptrs_;
 
+    protected:
+        std::istream& read(std::istream&);
+
     public:
+        map_kmer_db(int ksize);
+
         void add_kloc(kmer_t kmer, kloc_t loc);
         const std::vector<kloc_t>& get_klocs(kmer_t) const;
+
+        std::ostream& write(std::ostream&) const;
 };
 
 

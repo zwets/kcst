@@ -1,5 +1,6 @@
 kcst
 all-tests
+testfile.tmp
 test-int-sizes
 *.o
 *.a

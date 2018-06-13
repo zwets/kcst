@@ -22,6 +22,11 @@
 namespace kcst {
 
 
+map_kmer_db::map_kmer_db(int ksize)
+    : kmer_db(ksize)
+{
+}
+
 void
 map_kmer_db::add_kloc(kmer_t kmer, kloc_t loc)
 {
@@ -42,6 +47,45 @@ map_kmer_db::get_klocs(kmer_t kmer) const
 {
     std::map<kmer_t,kcnt_t>::const_iterator p = vec_ptrs_.find(kmer);
     return p == vec_ptrs_.end() ? kloc_vecs_[0] : kloc_vecs_[p->second];
+}
+
+std::istream&
+map_kmer_db::read(std::istream& is)
+{
+    kmer_db::read(is);
+
+    char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
+    kmer_t* pkmer = (kmer_t*) buf;
+    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+
+    while (is.read(buf, sizeof(buf)))
+    {
+        std::pair<kmer_t,kcnt_t> p(*pkmer, *pkcnt);
+        vec_ptrs_.insert(vec_ptrs_.end(), p);
+    }
+
+    return is;
+}
+
+std::ostream&
+map_kmer_db::write(std::ostream& os) const
+{
+    kmer_db::write(os);
+
+    char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
+    kmer_t* pkmer = (kmer_t*) buf;
+    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+
+    std::map<kmer_t,kcnt_t>::const_iterator p = vec_ptrs_.begin();
+    while (p != vec_ptrs_.end())
+    {
+        *pkmer = p->first;
+        *pkcnt = p->second;
+        os.write(buf, sizeof(buf));
+        ++p;
+    }
+    
+    return os;
 }
 
 

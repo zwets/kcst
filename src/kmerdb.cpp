@@ -25,9 +25,9 @@ namespace kcst {
 
 
 kmer_db* 
-kmer_db::new_db(int ksize, int max_mem)
+kmer_db::new_db(int ksize, int max_mem, db_type type)
 {
-    kmer_db *res;
+    kmer_db *res = 0;
 
     int kbits = 2*ksize - 1;
     int max_kbits = 8*sizeof(kmer_t) - 1;
@@ -39,21 +39,107 @@ kmer_db::new_db(int ksize, int max_mem)
                 " either reduce kmer size, or recompile with a larger kmer_t",
                 ksize, max_ksize, kbits, max_kbits);
 
-    // Determine the implementation that fits max_mem GB
-
-    kmer_t vec_mb = sizeof(std::vector<kcnt_t>) * (static_cast<std::uintmax_t>(1) << (kbits > 20 ? kbits - 20 : 0));
-    kmer_t max_mb = static_cast<std::uintmax_t>(max_mem) << 10;
-
-    if (vec_mb > max_mb)
+    if (type == optimal)
     {
-        std::cerr << std::endl << "Vector memory (" << (vec_mb>>10) << "G) would exceed " << (max_mb>>10) << "G: using map database" << std::endl;
-        res = new map_kmer_db();
+        // Determine the implementation that probably fits max_mem GB
+
+        kmer_t vec_mb = sizeof(std::vector<kcnt_t>) * (static_cast<std::uintmax_t>(1) << (kbits > 20 ? kbits - 20 : 0));
+        kmer_t max_mb = static_cast<std::uintmax_t>(max_mem) << 10;
+
+        if (vec_mb > max_mb)
+        {
+            std::cerr << std::endl << "Vector memory (" << (vec_mb>>10) << "G) would exceed " << (max_mb>>10) << "G: using map database" << std::endl;
+            type = map;
+        }
+        else
+        {
+            std::cerr << std::endl << "Vector memory (" << (vec_mb>>10) << "G) fits " << (max_mb>>10) << "G: using vector database" << std::endl;
+            type = vector;
+        }
     }
-    else {
-        res = new vector_kmer_db(ksize);
+
+    switch (type)
+    {
+        case vector: res = new vector_kmer_db(ksize); break;
+        case map: res = new map_kmer_db(ksize); break;
+        default: raise_error("programmer error 42: falling out of switch");
     }
 
     return res;
+}
+
+
+static std::string STR_MAGIC = "~kmerdb~";
+static std::string STR_VERSION = "v1";
+static std::string STR_KSIZE_LABEL = "ksize";
+
+kmer_db*
+kmer_db::read_db(std::istream &is, int max_mem, db_type type)
+{
+    kmer_db *res = 0;
+
+    std::string name, version, ksize_label, dummy;
+    int ksize;
+
+    is >> name >> version >> ksize_label >> ksize;
+
+    if (name == STR_MAGIC && version == STR_VERSION && ksize_label == STR_KSIZE_LABEL && std::getline(is,dummy))
+    {
+        res = new_db(ksize, max_mem, type);
+        res->read(is);
+    }
+    else
+        raise_error("failed to read kmer_db");
+
+    return res;
+}
+
+std::ostream&
+kmer_db::write(std::ostream& os) const
+{
+    char W = ' ';
+    
+    os << STR_MAGIC << W << STR_VERSION << W << STR_KSIZE_LABEL << W << ksize_ << std::endl;
+    
+    os << kloc_vecs_.size() << std::endl;
+
+    std::vector<std::vector<kloc_t> >::const_iterator p = kloc_vecs_.begin();
+    while (p != kloc_vecs_.end())
+    {
+        os << p->size() << W;
+        os.write((const char*)static_cast<const void*>(p->data()), p->size() * sizeof(kloc_t));
+        os << std::endl;
+        ++p;
+    }
+
+    return os;
+}
+
+
+std::istream&
+kmer_db::read(std::istream& is)
+{
+    std::vector<std::vector<kloc_t> >::size_type nvecs = kloc_vecs_.size();
+    is >> nvecs;
+    
+    kloc_vecs_.clear();
+    kloc_vecs_.reserve(nvecs);
+
+    while (nvecs--)
+    {
+        std::vector<kloc_t>::size_type nlocs;
+        is >> nlocs;
+        is.get(); // space
+
+        kloc_t buf[nlocs];
+        is.read((char*)buf, nlocs*sizeof(kloc_t));
+
+        kloc_vecs_.push_back(std::vector<kloc_t>(buf, buf+nlocs));
+
+        is.get(); // newline
+    }
+    
+    return is;
 }
 
 

@@ -1,8 +1,8 @@
 #!/usr/bin/make
 
-OBJS = kcst.o seqreader.o hitcounter.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
+OBJS = kcst.o seqreader.o hitcounter.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o readwrite.o utils.o 
 
-HDRS = seqreader.h hitcounter.h kmerdb.h kmerise.h utils.h
+HDRS = seqreader.h hitcounter.h kmerdb.h kmerise.h readwrite.h utils.h
 
 CXXFLAGS += -O2 -g -Wall -Wextra -std=c++11
 

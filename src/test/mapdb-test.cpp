@@ -28,7 +28,7 @@ static const int kbits = 2*ksize - 1;
 static const int kmers = 1<<kbits; // 512
 
 TEST(mapdb_test, empty_db) {
-    map_kmer_db db;
+    map_kmer_db db(0);
 
     for (int i=0; i < kmers; ++i) {
         EXPECT_TRUE(db.get_klocs(i).empty());
@@ -36,7 +36,7 @@ TEST(mapdb_test, empty_db) {
 }
 
 TEST(mapdb_test, single_at_start) {
-    map_kmer_db db;
+    map_kmer_db db(0);
 
     db.add_kloc(0,42);
     ASSERT_EQ(1, db.get_klocs(0).size());
@@ -44,7 +44,7 @@ TEST(mapdb_test, single_at_start) {
 }
 
 TEST(mapdb_test, multi_at_start) {
-    map_kmer_db db;
+    map_kmer_db db(0);
 
     db.add_kloc(0,42);
     db.add_kloc(0,99);
@@ -54,7 +54,7 @@ TEST(mapdb_test, multi_at_start) {
 }
 
 TEST(mapdb_test, single_at_end) {
-    map_kmer_db db;
+    map_kmer_db db(0);
 
     db.add_kloc(kmers-1,42);
     ASSERT_EQ(1, db.get_klocs(kmers-1).size());
@@ -62,7 +62,7 @@ TEST(mapdb_test, single_at_end) {
 }
 
 TEST(mapdb_test, multi_at_end) {
-    map_kmer_db db;
+    map_kmer_db db(0);
 
     db.add_kloc(kmers-1,42);
     db.add_kloc(kmers-1,99);

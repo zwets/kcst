@@ -23,7 +23,7 @@ namespace kcst {
 
 
 vector_kmer_db::vector_kmer_db(int ksize)
-    : vec_ptrs_(1L<<(2*ksize-1), 0)
+    : kmer_db(ksize), vec_ptrs_(1L<<(2*ksize-1), 0)
 {
 }
 
@@ -46,6 +46,45 @@ const std::vector<kloc_t>&
 vector_kmer_db::get_klocs(kmer_t kmer) const
 {
     return kloc_vecs_[vec_ptrs_[kmer]];
+}
+
+std::istream&
+vector_kmer_db::read(std::istream& is)
+{
+    kmer_db::read(is);
+
+    char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
+    kmer_t* pkmer = (kmer_t*) buf;
+    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+
+    while (is.read(buf, sizeof(buf)))
+        vec_ptrs_[*pkmer] = *pkcnt;
+
+    return is;
+}
+
+std::ostream&
+vector_kmer_db::write(std::ostream& os) const
+{
+    kmer_db::write(os);
+
+    char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
+    kmer_t* pkmer = (kmer_t*) buf;
+    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+
+    std::vector<kcnt_t>::const_iterator p = vec_ptrs_.begin();
+    while (p != vec_ptrs_.end())
+    {
+        if (*p)
+        {
+            *pkmer = p - vec_ptrs_.begin();
+            *pkcnt = *p;
+            os.write(buf, sizeof(buf));
+        }
+        ++p;
+    }
+
+    return os;
 }
 
 

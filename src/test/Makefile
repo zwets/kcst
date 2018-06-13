@@ -65,7 +65,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 
 USER_HEADERS = $(USER_DIR)/kmerise.h $(USER_DIR)/kmerdb.h $(USER_DIR)/seqreader.h $(USER_DIR)/utils.h
 
-USER_OBJS = vectordb.o mapdb.o \
+USER_OBJS = vectordb.o mapdb.o kmerdb.o \
 	    seqreader.o \
 	    kmeriser.o kmerator.o baserator.o utils.o
 
@@ -73,6 +73,9 @@ vectordb.o : $(USER_DIR)/vectordb.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 mapdb.o : $(USER_DIR)/mapdb.cpp $(USER_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
+
+kmerdb.o : $(USER_DIR)/kmerdb.cpp $(USER_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 seqreader.o : $(USER_DIR)/seqreader.cpp $(USER_HEADERS)
@@ -92,9 +95,12 @@ utils.o : $(USER_DIR)/utils.cpp $(USER_HEADERS)
 
 # Our test objs
 
-TEST_OBJS = vectordb-test.o mapdb-test.o \
+TEST_OBJS = readwrite-test.o vectordb-test.o mapdb-test.o \
 	    seqreader-test.o \
 	    kmeriser-test.o kmerator-test.o baserator-test.o
+
+readwrite-test.o : readwrite-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
 vectordb-test.o : vectordb-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
