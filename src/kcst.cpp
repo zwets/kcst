@@ -49,6 +49,7 @@ int main (int, char *argv[])
 {
     std::string db_fname;
     std::string qry_fname;
+    std::string out_fname;
 
     try {
         while (*++argv) 
@@ -56,6 +57,10 @@ int main (int, char *argv[])
             if (!std::strcmp("-v", *argv))
             {
                 verbose = true;
+            }
+            else if (!std::strcmp("-w", *argv) && *++argv)
+            {
+                out_fname = *argv;
             }
             else if (!std::strcmp("-k", *argv) && *++argv)
             {
@@ -99,8 +104,6 @@ int main (int, char *argv[])
 
         // HANDLE DATABASE
 
-        std::cerr << "creating database ... ";
-
         std::ifstream db_file;
         db_file.open(db_fname.c_str());
 
@@ -110,27 +113,65 @@ int main (int, char *argv[])
             return 1;
         }
 
-        kmer_db *db = kmer_db::new_db(ksize, max_mem);
-
-        std::cerr << "ok\nreading database sequences ... ";
+        kmer_db *db = 0;
 
         hit_counter counter;
 
-        sequence_reader reader(db_file, sequence_reader::fasta);
-        kmerator k_ator(ksize, MAX_VARIANTS_PER_KMER);
-        sequence seq;
-
-        while (reader.next(seq))
+        if (db_file.peek() == '~')
         {
-            kloc_t loc = counter.add_target(seq.header);
-            k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
-            do {
-                db->add_kloc(k_ator.knum(), loc);
-            } while (k_ator.inc());
+            std::cerr << "reading database file ... ";
+
+            std::string magic;
+            size_t nseq;
+
+            db_file >> magic >> nseq;
+
+            if (magic != "~kcst~")
+                raise_error("invalid kcst database file: %s", db_fname.c_str());
+
+            std::string line;
+            getline(db_file, line);
+
+            while (nseq-- && getline(db_file, line))
+                counter.add_target(line);
+
+            db = kmer_db::read_db(db_file, max_mem);
+        }
+        else
+        {
+            std::cerr << "creating database from sequences ... ";
+
+            db = kmer_db::new_db(ksize, max_mem);
+
+            sequence_reader reader(db_file, sequence_reader::fasta);
+            kmerator k_ator(ksize, MAX_VARIANTS_PER_KMER);
+            sequence seq;
+
+            while (reader.next(seq))
+            {
+                kloc_t loc = counter.add_target(seq.header);
+                k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
+                do {
+                    db->add_kloc(k_ator.knum(), loc);
+                } while (k_ator.inc());
+            }
+
+            if (!out_fname.empty()) 
+            {
+                std::cerr << "ok\nwriting database file to " <<  out_fname << " ... ";
+                std::ofstream out_file(out_fname.c_str());
+
+                out_file << "~kcst~ " << counter.targets().size() << " sequences" << std::endl;
+                for (std::vector<std::string>::const_iterator p = counter.targets().begin(); p != counter.targets().end(); ++p)
+                    out_file << *p << std::endl;
+
+                db->write(out_file);
+
+                out_file.close();
+            }
         }
 
         std::cerr << "ok" << std::endl;
-
         db_file.close();
 
         // HANDLE QUERY
