@@ -23,9 +23,7 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "seqreader.h"
-#include "hitcounter.h"
-#include "kmerise.h"
+#include "templatedb.h"
 #include "kmerdb.h"
 #include "utils.h"
 
@@ -34,22 +32,25 @@ using namespace kcst;
 static const int MAX_VARIANTS_PER_KMER = 64;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
+static const int MAX_KSIZE = 31;
 
 static const std::string USAGE("\n"
-"Usage: kcst [-k KSIZE] [-v] DATABASE [QUERIES]\n"
+"Usage: kcst [-k KSIZE] [-m MEM] [-w] [-v] TEMPLATES [QUERY]\n"
 "\n"
-"  Read FASTA DATABASE, then read QUERIES on stdin.\n"
+"  Read FASTA TEMPLATES, then read QUERY on stdin.\n"
 "\n");
 
-static int ksize = DEFAULT_KSIZE;
-static int max_mem = DEFAULT_MEM;
-static int verbose = false;
 
 int main (int, char *argv[]) 
 {
-    std::string db_fname;
+    std::string tpl_fname;
     std::string qry_fname;
     std::string out_fname;
+    int ksize = DEFAULT_KSIZE;
+    int max_mem = DEFAULT_MEM;
+    int verbose = false;
+
+        // PARSE ARGUMENTS
 
     try {
         while (*++argv) 
@@ -65,7 +66,7 @@ int main (int, char *argv[])
             else if (!std::strcmp("-k", *argv) && *++argv)
             {
                 ksize = std::atoi(*argv);
-                if (ksize < 1 || ksize > kmeriser::max_ksize) 
+                if (ksize < 1 || ksize > MAX_KSIZE) 
                     raise_error("invalid KSIZE: %s", *argv);
             }
             else if (!std::strcmp("-m", *argv) && *++argv)
@@ -79,10 +80,10 @@ int main (int, char *argv[])
                 std::cerr << USAGE;
                 return 1;
             }
-            else if (db_fname.empty())
+            else if (tpl_fname.empty())
             {
-                db_fname = *argv;
-                std::cerr << "database file: " << db_fname << std::endl;
+                tpl_fname = *argv;
+                std::cerr << "database file: " << tpl_fname << std::endl;
             }
             else if (qry_fname.empty())
             {
@@ -96,139 +97,42 @@ int main (int, char *argv[])
             }
         }
 
-        if (db_fname.empty())
+        if (tpl_fname.empty())
         {
             std::cerr << USAGE;
             return 1;
         }
 
-        // HANDLE DATABASE
+        if (qry_fname.empty())
+            qry_fname = "-";
 
-        std::ifstream db_file;
-        db_file.open(db_fname.c_str());
+            // READ TEMPLATE DB
 
-        if (!db_file)
-        {
-            std::cerr << "cannot open file: " << db_fname << std::endl;
-            return 1;
-        }
+        template_db tpldb(ksize, max_mem, MAX_VARIANTS_PER_KMER);
+        tpldb.read(tpl_fname);
 
-        kmer_db *db = 0;
+            // WRITE TEMPLATE DB
 
-        hit_counter counter;
+        if (!out_fname.empty() && !tpldb.write(out_fname))
+            std::cerr << "failed to write template binary file: " << out_fname << std::endl;
 
-        if (db_file.peek() == '~')
-        {
-            std::cerr << "reading database file ... ";
+            // PERFORM QUERY
 
-            std::string magic;
-            size_t nseq;
+        query_result res = tpldb.query(qry_fname, 80);
 
-            db_file >> magic >> nseq;
+            // SHOW RESULT
 
-            if (magic != "~kcst~")
-                raise_error("invalid kcst database file: %s", db_fname.c_str());
+        std::cerr << "RESULTS" << std::endl;
 
-            std::string line;
-            getline(db_file, line);
-
-            while (nseq-- && getline(db_file, line))
-                counter.add_target(line);
-
-            db = kmer_db::read_db(db_file, max_mem);
-        }
-        else
-        {
-            std::cerr << "creating database from sequences ... ";
-
-            db = kmer_db::new_db(ksize, max_mem);
-
-            sequence_reader reader(db_file, sequence_reader::fasta);
-            kmerator k_ator(ksize, MAX_VARIANTS_PER_KMER);
-            sequence seq;
-
-            while (reader.next(seq))
-            {
-                kloc_t loc = counter.add_target(seq.header);
-                k_ator.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
-                do {
-                    db->add_kloc(k_ator.knum(), loc);
-                } while (k_ator.inc());
-            }
-
-            if (!out_fname.empty()) 
-            {
-                std::cerr << "ok\nwriting database file to " <<  out_fname << " ... ";
-                std::ofstream out_file(out_fname.c_str());
-
-                out_file << "~kcst~ " << counter.targets().size() << " sequences" << std::endl;
-                for (std::vector<std::string>::const_iterator p = counter.targets().begin(); p != counter.targets().end(); ++p)
-                    out_file << *p << std::endl;
-
-                db->write(out_file);
-
-                out_file.close();
-            }
-        }
-
-        std::cerr << "ok" << std::endl;
-        db_file.close();
-
-        // HANDLE QUERY
-
-        std::ifstream qry_file;
-        std::istream *is = &std::cin;
-
-        if (!qry_fname.empty())
-        {
-            qry_file.open(qry_fname.c_str());
-
-            if (!qry_file)
-            {
-                std::cerr << "failed to open query file: " << qry_fname << std::endl;
-                return 1;
-            }
-
-            is = &qry_file;
-            std::cerr << "reading query sequences " << std::endl;
-        }
-        else
-        {
-            std::cout << "please enter fasta, fastq, or base sequence data: " << std::endl;
-        }
-
-        sequence_reader qry_reader(*is);
-        kmeriser k_iser(ksize);
-        sequence qry;
-
-        while (qry_reader.next(qry))
-        {
-            k_iser.set(qry.data.c_str(), qry.data.c_str() + qry.data.length());
-
-            do {
-                const std::vector<kloc_t>& hits = db->get_klocs(k_iser.knum());
-                for (std::vector<kloc_t>::const_iterator p = hits.begin(); p != hits.end(); ++p)
-                    counter.count_hit(*p);
-            } while (k_iser.inc());
-        }
-
-        if (is != &std::cin)
-            qry_file.close();
-
-        std::vector< std::pair<hitc_t,std::string> > results = counter.score_list();
-
-        int i = 21;
-        for (std::vector< std::pair<hitc_t,std::string> >::const_reverse_iterator p = results.rbegin(); --i && p != results.rend(); ++p)
-        {
-            std::cout << p->first << '\t' << p->second << std::endl;
-        }
-
-        return 0;
+        for (size_t i = 0; i != res.size(); ++i)
+            std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << std::endl;
     }
     catch (std::runtime_error e) {
         std::cerr << std::endl << "kcst: " << e.what() << std::endl;
         return 1;
     }
+
+    return 0;
 }
 
 // vim: sts=4:sw=4:et:si:ai

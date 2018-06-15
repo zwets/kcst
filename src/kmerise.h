@@ -45,7 +45,9 @@
 namespace kcst {
 
 // knum_t - the number type used to store an encoded kmer.
-// Purposely scoped kcst::knum_t so conflict with kmerdb.h is noticed.
+//
+// Counterpart of kmer_t in kmerdb.h, but named differently to keep decoupled,
+// and compiler will warn when converting between different bit sized typed.
 //
 typedef std::uint64_t knum_t;
 
@@ -106,7 +108,7 @@ class kmerator
 
         bool set(const char *begin, const char *end);
         bool inc();
-        int variant() const;
+        int variant() const { return variant_; }
         knum_t knum() const;
         std::vector<knum_t> knums();
 };
