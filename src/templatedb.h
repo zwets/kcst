@@ -40,8 +40,9 @@ typedef std::uint32_t npos_t;
 struct seq_hits
 {
     std::string seqid;  // the part between '>' and first space in FASTA header
-    npos_t hits;        // number of kmers hit in sequence
     npos_t len;         // number of kmers in sequence (bases - ksize + 1)
+    npos_t hits;        // number of kmers hit in sequence
+    double phit;        // percentage hits / len
 };
 
 typedef std::vector<seq_hits> query_result;
@@ -82,7 +83,7 @@ class template_db
         std::ostream& write(std::ostream&);
         bool write(const std::string&);
 
-        query_result query(const std::string&, int min_cov_pct = 0) const;
+        query_result query(const std::string&, double min_cov_pct = 1.0) const;
 };
 
 

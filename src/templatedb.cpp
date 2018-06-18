@@ -181,7 +181,7 @@ template_db::write(const std::string& filename)
 }
 
 query_result
-template_db::query(const std::string& filename, int min_cov_pct) const
+template_db::query(const std::string& filename, double min_cov_pct) const
 {
     std::ifstream qry_file;
     std::istream* is = &std::cin;
@@ -246,8 +246,9 @@ template_db::query(const std::string& filename, int min_cov_pct) const
         
         while (p != pend) if (*p++) ++hits;
 
-        if ((double)min_cov_pct * (double)len / 100.0 < hits)
-            res.push_back({seq_ids_[i], hits, seq_lens_[i]});
+        double phit = 100.0 * (double)hits / (double)len;
+        if (min_cov_pct < phit)
+            res.push_back({seq_ids_[i], seq_lens_[i], hits, phit});
     }
 
     return res;

@@ -32,6 +32,7 @@ using namespace kcst;
 static const int MAX_VARIANTS_PER_KMER = 64;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
+static const double DEFAULT_COV = 99.0;
 static const int MAX_KSIZE = 31;
 
 static const std::string USAGE("\n"
@@ -48,6 +49,7 @@ int main (int, char *argv[])
     std::string out_fname;
     int ksize = DEFAULT_KSIZE;
     int max_mem = DEFAULT_MEM;
+    double min_cov = DEFAULT_COV;
     int verbose = false;
 
         // PARSE ARGUMENTS
@@ -68,6 +70,10 @@ int main (int, char *argv[])
                 ksize = std::atoi(*argv);
                 if (ksize < 1 || ksize > MAX_KSIZE) 
                     raise_error("invalid KSIZE: %s", *argv);
+            }
+            else if (!std::strcmp("-c", *argv) && *++argv)
+            {
+                min_cov = std::atof(*argv);
             }
             else if (!std::strcmp("-m", *argv) && *++argv)
             {
@@ -118,14 +124,14 @@ int main (int, char *argv[])
 
             // PERFORM QUERY
 
-        query_result res = tpldb.query(qry_fname, 80);
+        query_result res = tpldb.query(qry_fname, min_cov);
 
             // SHOW RESULT
 
         std::cerr << "RESULTS" << std::endl;
 
         for (size_t i = 0; i != res.size(); ++i)
-            std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << std::endl;
+            std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
     }
     catch (std::runtime_error e) {
         std::cerr << std::endl << "kcst: " << e.what() << std::endl;
