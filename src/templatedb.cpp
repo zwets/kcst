@@ -53,7 +53,8 @@ template_db::read_binary(std::istream& is)
     getline(is, dummy); // consume newline
 
     if (magic != MAGIC || nseq_label != NSEQ_LABEL || ksize_label != KSIZE_LABEL)
-        raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+'", MAGIC, NSEQ_LABEL, KSIZE_LABEL);
+        raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+'",
+                MAGIC.c_str(), NSEQ_LABEL.c_str(), KSIZE_LABEL.c_str());
 
     if (ksize != ksize_)
         raise_error("binary template file kmer size (%d) mismatches kmer size %d", ksize, ksize_);
