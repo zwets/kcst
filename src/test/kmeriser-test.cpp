@@ -29,19 +29,22 @@ const int   A_VAL = 0, C_VAL = 1, G_VAL = 2, T_VAL = 3;
 
 TEST(kmeriser_test, no_ksize_zero) {
     kmeriser *r = 0;
-    EXPECT_THROW(r = new kmeriser(0), std::runtime_error);
+    //EXPECT_THROW(r = new kmeriser(0), std::runtime_error);
+    EXPECT_DEATH(r = new kmeriser(0), ".*");
     delete r;
 }
 
 TEST(kmeriser_test, no_ksize_too_big) {
     kmeriser *r = 0;
-    EXPECT_THROW(r = new kmeriser(kmeriser::max_ksize+1), std::runtime_error);
+    //EXPECT_THROW(r = new kmeriser(kmeriser::max_ksize+1), std::runtime_error);
+    EXPECT_DEATH(r = new kmeriser(kmeriser::max_ksize+1), ".*");
     delete r;
 }
 
 TEST(kmeriser_test, no_ksize_even) {
     kmeriser *r = 0;
-    EXPECT_THROW(r = new kmeriser(6), std::runtime_error);
+    //EXPECT_THROW(r = new kmeriser(6), std::runtime_error);
+    EXPECT_DEATH(r = new kmeriser(6), ".*");
     delete r;
 }
 
@@ -79,7 +82,8 @@ TEST(kmeriser_test, empty_seq) {
     kmeriser r(1);
     char seq[] = "";
     EXPECT_FALSE(r.set(seq, seq+strlen(seq)));
-    EXPECT_THROW(r.knum(),std::runtime_error);
+    //EXPECT_THROW(r.knum(),std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmeriser_test, set_past_end) {
@@ -87,7 +91,8 @@ TEST(kmeriser_test, set_past_end) {
     char seq[] = "acg";
     EXPECT_FALSE(r.set(seq+1, seq+3));
     EXPECT_FALSE(r.inc());
-    EXPECT_THROW(r.knum(), std::runtime_error);
+    //EXPECT_THROW(r.knum(), std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmeriser_test, read_past_end) {
@@ -95,7 +100,8 @@ TEST(kmeriser_test, read_past_end) {
     char seq[] = "acg";
     EXPECT_TRUE(r.set(seq, seq+3));
     EXPECT_FALSE(r.inc());
-    EXPECT_THROW(r.knum(), std::runtime_error);
+    //EXPECT_THROW(r.knum(), std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmeriser_test, knums_expires) {

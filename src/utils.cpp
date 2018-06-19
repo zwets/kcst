@@ -16,23 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdexcept>
+#include <iostream>
 #include <cstdio>
 #include <cstdarg>
+#include "utils.h"
 
 namespace kcst {
 
-static char buf[2048];
 
-void raise_error(const char *fmt, ...)
+void
+raise_error(const char *fmt, ...)
 {
+    char buf[2048];
+
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 
-    throw std::runtime_error(buf);
+    std::cerr << buf << std::endl;
+    std::exit(1);
 }
+     
 
 } // namespace kcst
 

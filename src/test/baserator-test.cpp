@@ -189,10 +189,15 @@ TEST(baserator_test, capital_letters) {
 TEST(baserator_test, invalid_letters) {
     baserator b;
 
-    EXPECT_THROW(b.set('e'), std::runtime_error);
-    EXPECT_THROW(b.set('u'), std::runtime_error);
-    EXPECT_THROW(b.set('z'), std::runtime_error);
-    EXPECT_THROW(b.set('0'), std::runtime_error);
+    //EXPECT_THROW(b.set('e'), std::runtime_error);
+    //EXPECT_THROW(b.set('u'), std::runtime_error);
+    //EXPECT_THROW(b.set('z'), std::runtime_error);
+    //EXPECT_THROW(b.set('0'), std::runtime_error);
+
+    EXPECT_DEATH(b.set('e'), ".*");
+    EXPECT_DEATH(b.set('u'), ".*");
+    EXPECT_DEATH(b.set('z'), ".*");
+    EXPECT_DEATH(b.set('0'), ".*");
 }
 
 TEST(baserator_test, rollaround) {

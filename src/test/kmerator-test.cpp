@@ -31,19 +31,22 @@ const int   A_VAL = 0, C_VAL = 1, G_VAL = 2, T_VAL = 3;
 
 TEST(kmerator_test, no_ksize_zero) {
     kmerator *r = 0;
-    EXPECT_THROW(r = new kmerator(0), std::runtime_error);
+    //EXPECT_THROW(r = new kmerator(0), std::runtime_error);
+    EXPECT_DEATH(r = new kmerator(0), ".*");
     delete r;
 }
 
 TEST(kmerator_test, no_ksize_too_big) {
     kmerator *r = 0;
-    EXPECT_THROW(r = new kmerator(kmerator::max_ksize+1), std::runtime_error);
+    //EXPECT_THROW(r = new kmerator(kmerator::max_ksize+1), std::runtime_error);
+    EXPECT_DEATH(r = new kmerator(kmerator::max_ksize+1), ".*");
     delete r;
 }
 
 TEST(kmerator_test, no_ksize_even) {
     kmerator *r = 0;
-    EXPECT_THROW(r = new kmerator(6), std::runtime_error);
+    //EXPECT_THROW(r = new kmerator(6), std::runtime_error);
+    EXPECT_DEATH(r = new kmerator(6), ".*");
     delete r;
 }
 
@@ -81,7 +84,8 @@ TEST(kmerator_test, empty_seq) {
     kmerator r(1);
     char seq[] = "";
     r.set(seq, seq+strlen(seq));
-    EXPECT_THROW(r.knum(),std::runtime_error);
+    //EXPECT_THROW(r.knum(),std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmerator_test, set_past_end) {
@@ -89,7 +93,8 @@ TEST(kmerator_test, set_past_end) {
     char seq[] = "acg";
     EXPECT_FALSE(r.set(seq+1, seq+3));
     EXPECT_FALSE(r.inc());
-    EXPECT_THROW(r.knum(), std::runtime_error);
+    //EXPECT_THROW(r.knum(), std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmerator_test, read_past_end) {
@@ -97,7 +102,8 @@ TEST(kmerator_test, read_past_end) {
     char seq[] = "acg";
     EXPECT_TRUE(r.set(seq, seq+3));
     EXPECT_FALSE(r.inc());
-    EXPECT_THROW(r.knum(), std::runtime_error);
+    //EXPECT_THROW(r.knum(), std::runtime_error);
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmerator_test, knums_expires) {
@@ -139,14 +145,16 @@ TEST(kmerator_test, variant_limit) {
     kmerator r(3);
     char seq[] = "abcdg";   // variants 1x3x1x3 = 9 is too many
     r.set(seq, seq+5);
-    EXPECT_THROW(r.knums(),std::runtime_error);
+    //EXPECT_THROW(r.knums(),std::runtime_error);
+    EXPECT_DEATH(r.knums(), ".*");
 }
 
 TEST(kmerator_test, set_limit) {
     kmerator r(3,1);
     char seq[] = "acsct";   // variants 2 is too many
     r.set(seq, seq+5);
-    EXPECT_THROW(r.knums(),std::runtime_error);
+    //EXPECT_THROW(r.knums(),std::runtime_error);
+    EXPECT_DEATH(r.knums(), ".*");
 }
 
 TEST(kmerator_test, no_limit) {

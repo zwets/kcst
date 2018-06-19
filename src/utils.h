@@ -18,11 +18,30 @@
 #ifndef utils_h_INCLUDED
 #define utils_h_INCLUDED
 
+#include <iostream>
+
 namespace kcst {
 
 extern void raise_error(const char* t, ...);
 
+/* Alternative using the C++ approach, without varargs, see:
+ * https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#-es34-dont-define-a-c-style-variadic-function
+ *
+void raise_error()
+{
+    std::cerr << std::endl;
+    std::exit(1);
 }
+
+template <typename T, typename... Ts>
+constexpr void error(T head, Ts... tail)
+{
+    std::cerr << head;
+    error(tail...);
+}
+*/
+
+} // namespace
 
 #endif // utils_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et
