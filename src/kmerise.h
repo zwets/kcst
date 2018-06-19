@@ -42,7 +42,7 @@
 // every sequence, and also need only half the storage.
 
 
-namespace kcst {
+namespace khc {
 
 // knum_t - the number type used to store an encoded kmer.
 //
@@ -139,7 +139,7 @@ class kmeriser
 };
 
 
-} // namespace kcst
+} // namespace khc
 
 #endif // kmerise_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

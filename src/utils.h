@@ -20,7 +20,8 @@
 
 #include <iostream>
 
-namespace kcst {
+namespace khc {
+
 
 extern void raise_error(const char* t, ...);
 
@@ -41,7 +42,8 @@ constexpr void error(T head, Ts... tail)
 }
 */
 
-} // namespace
+
+} // namespace khc
 
 #endif // utils_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

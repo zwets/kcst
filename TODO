@@ -1,5 +1,7 @@
 TODOs
 
 - Make kmeriser skip Ns in sequence
-- Rename kcst to kmerhit, make kcst wrapper around it
+- When using pre-made binary database, make -k optional
+- Add the kcst wrapper doing the MLST
+- Add other wrappers?
 

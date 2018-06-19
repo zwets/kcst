@@ -23,9 +23,9 @@
 #include "kmerise.h"
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
-static const std::string MAGIC("~kcst~");
+static const std::string MAGIC("~khc~");
 static const std::string NSEQ_LABEL("nseq");
 static const std::string KSIZE_LABEL("ksize");
 
@@ -80,7 +80,7 @@ template_db::read_binary(std::istream& is)
     kmer_db_ = kmer_db::read_db(is, max_mem_);
 
     if (kmer_db_->ksize() != ksize_)
-        raise_error("programmer error 42: kmer_db kmer size %d different from kcst kmer size %d", kmer_db_->ksize(), ksize_);
+        raise_error("programmer error 42: kmer_db kmer size %d different from khc kmer size %d", kmer_db_->ksize(), ksize_);
 
     std::cerr << "OK" << std::endl;
 
@@ -242,6 +242,6 @@ template_db::query(const std::string& filename, double min_cov_pct) const
 }
 
 
-} // namespace kcst
+} // namespace khc
 
 // vim: sts=4:sw=4:ai:si:et

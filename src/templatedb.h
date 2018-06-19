@@ -24,7 +24,7 @@
 #include "seqreader.h"
 #include "kmerdb.h"
 
-namespace kcst {
+namespace khc {
 
 
 // nseq_t - number type to hold sequence count
@@ -87,7 +87,7 @@ class template_db
 };
 
 
-} // namespace kcst
+} // namespace khc
 
 #endif // templatedb_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

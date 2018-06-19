@@ -23,7 +23,7 @@
 #include <vector>
 #include <map>
 
-namespace kcst {
+namespace khc {
 
 
 // knum_t - the number type used to store an encoded kmer
@@ -126,7 +126,7 @@ class map_kmer_db : public kmer_db
 };
 
 
-} // namespace kcst
+} // namespace khc
 
 #endif // kmerdb_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

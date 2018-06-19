@@ -19,7 +19,7 @@
 #include "kmerdb.h"
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
 
 map_kmer_db::map_kmer_db(int ksize)
@@ -87,6 +87,6 @@ map_kmer_db::write(std::ostream& os) const
 }
 
 
-} // namespace kcst
+} // namespace khc
 
 // vim: sts=4:sw=4:ai:si:et

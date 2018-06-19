@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-namespace kcst {
+namespace khc {
 
 
 // sequence - Value object holding a single sequence
@@ -77,7 +77,7 @@ class sequence_reader {
 };
 
 
-} // namespace kcst
+} // namespace khc
 
 #endif // seqreader_h_INCLUDED
        // vim: sts=4:sw=4:ai:si:et

@@ -19,7 +19,7 @@
 #include "kmerise.h"
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
 
 static const knum_t A = 0;
@@ -106,6 +106,6 @@ baserator::inc()
 }
 
 
-} // namespace kcst 
+} // namespace khc 
 
 // vim: sts=4:sw=4:ai:si:et

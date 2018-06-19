@@ -21,7 +21,7 @@
 #include <gtest/gtest.h>
 #include "kmerise.h"
 
-using namespace kcst;
+using namespace khc;
 
 namespace {
 

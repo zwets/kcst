@@ -1,17 +1,17 @@
 #!/usr/bin/make
 
-OBJS = kcst.o templatedb.o seqreader.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
+OBJS = khc.o templatedb.o seqreader.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
 
 HDRS = templatedb.h seqreader.h kmerdb.h kmerise.h readwrite.h utils.h
 
 CXXFLAGS += -O2 -g -Wall -Wextra -std=c++14
 
-all: kcst
+all: khc
 
 clean:
-	rm -f *.o kcst
+	rm -f *.o khc
 
-kcst: $(OBJS)
+khc: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.o: %.cpp $(HDRS)

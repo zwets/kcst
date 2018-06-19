@@ -23,7 +23,7 @@
 #include "seqreader.h"
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
 
 sequence_reader::sequence_reader(std::istream &is, mode_t mode)
@@ -142,6 +142,6 @@ sequence_reader::read_fastq(sequence &seq)
 }
 
 
-} // namespace kcst
+} // namespace khc
 
 // vim: sts=4:sw=4:ai:si:et

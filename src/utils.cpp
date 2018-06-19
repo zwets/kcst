@@ -21,7 +21,7 @@
 #include <cstdarg>
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
 
 void
@@ -39,6 +39,6 @@ raise_error(const char *fmt, ...)
 }
      
 
-} // namespace kcst
+} // namespace khc
 
 // vim: sts=4:sw=4:ai:si:et

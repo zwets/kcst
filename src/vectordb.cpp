@@ -19,7 +19,7 @@
 #include "kmerdb.h"
 #include "utils.h"
 
-namespace kcst {
+namespace khc {
 
 
 vector_kmer_db::vector_kmer_db(int ksize)
@@ -88,6 +88,6 @@ vector_kmer_db::write(std::ostream& os) const
 }
 
 
-} // namespace kcst
+} // namespace khc
 
 // vim: sts=4:sw=4:ai:si:et

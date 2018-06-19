@@ -1,4 +1,4 @@
-/* kcst.cpp - kmer-counting sequence typer
+/* khc.cpp - kmer hit count
  * 
  * Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
  *
@@ -27,7 +27,7 @@
 #include "kmerdb.h"
 #include "utils.h"
 
-using namespace kcst;
+using namespace khc;
 
 static const int MAX_VARIANTS_PER_KMER = 64;
 static const int DEFAULT_KSIZE = 13;
@@ -36,9 +36,12 @@ static const double DEFAULT_COV = 99.0;
 static const int MAX_KSIZE = 31;
 
 static const std::string USAGE("\n"
-"Usage: kcst [-k KSIZE] [-m MEM] [-w] [-v] TEMPLATES [QUERY]\n"
+"Usage: khc [-k KSIZE] [-m MEM] [-w] [-v] SUBJECTS [QUERY]\n"
 "\n"
-"  Read FASTA TEMPLATES, then read QUERY on stdin.\n"
+"  Count for each sequence in SUBJECTS the number of kmers from QUERY that\n"
+"  hit it.\n"
+"\n"
+"  @DOCUMENTATION will follow once stabilised\n"
 "\n");
 
 
@@ -50,7 +53,7 @@ int main (int, char *argv[])
     int ksize = DEFAULT_KSIZE;
     int max_mem = DEFAULT_MEM;
     double min_cov = DEFAULT_COV;
-    int verbose = false;
+//    int verbose = false;
 
         // PARSE ARGUMENTS
 
@@ -59,7 +62,7 @@ int main (int, char *argv[])
         {
             if (!std::strcmp("-v", *argv))
             {
-                verbose = true;
+//                verbose = true;
             }
             else if (!std::strcmp("-w", *argv) && *++argv)
             {
@@ -134,7 +137,7 @@ int main (int, char *argv[])
             std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
     }
     catch (std::runtime_error e) {
-        std::cerr << std::endl << "kcst: " << e.what() << std::endl;
+        std::cerr << std::endl << "khc: " << e.what() << std::endl;
         return 1;
     }
 

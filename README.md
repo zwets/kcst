@@ -2,6 +2,8 @@
 
 `kcst` predicts species and MLST from assembled sequences or raw reads.
 
+@@ UNDER CONSTRUCTION @@
+
 Home: <https://github.com/zwets/kcst>
 
 
@@ -13,15 +15,17 @@ those found in the MLST profiles, and picking the alleles most hit by the
 query.
 
 `kcst` does this 'all in one go'.  Instead of first predicting species in
-order to pick the applicable MLST schema, it matches the query with all MLST
-alleles at once.
+order to pick the applicable MLST schema, it matches the query with _all_
+MLST alleles at once.
 
 
 ## Running
 
-    # Proper argument handling is WIP
-    ./kcst [OPTIONS] DBFILE <QUERYFILE
+    # Perform a kmer hit count of QUERY on SUBJECTS
+    ./kch [OPTIONS] SUBJECTS [QUERY]
 
+    # In progress: perform kmer counting ST
+    ./kcst [OPTIONS] SUBJECTS [QUERY]
 
 ## Building
 
@@ -43,7 +47,7 @@ alleles at once.
 
 #### License
 
-kcst - kmer-counting sequence typer
+kcst - kmer-counting sequence typer  
 Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
 
 This program is free software: you can redistribute it and/or modify
