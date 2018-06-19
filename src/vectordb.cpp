@@ -54,8 +54,8 @@ vector_kmer_db::read(std::istream& is)
     kmer_db::read(is);
 
     char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
-    kmer_t* pkmer = (kmer_t*) buf;
-    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+    kmer_t* pkmer = reinterpret_cast<kmer_t*>(buf);
+    kcnt_t* pkcnt = reinterpret_cast<kcnt_t*>(buf + sizeof(kmer_t));
 
     while (is.read(buf, sizeof(buf)))
         vec_ptrs_[*pkmer] = *pkcnt;
@@ -69,8 +69,8 @@ vector_kmer_db::write(std::ostream& os) const
     kmer_db::write(os);
 
     char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
-    kmer_t* pkmer = (kmer_t*) buf;
-    kcnt_t* pkcnt = (kcnt_t*)(buf + sizeof(kmer_t));
+    kmer_t* pkmer = reinterpret_cast<kmer_t*>(buf);
+    kcnt_t* pkcnt = reinterpret_cast<kcnt_t*>(buf + sizeof(kmer_t));
 
     std::vector<kcnt_t>::const_iterator p = vec_ptrs_.begin();
     while (p != vec_ptrs_.end())

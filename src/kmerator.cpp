@@ -67,7 +67,7 @@ kmerator::inc()
         if (++variant_ == max_variants_) // count variant and check limit
         {
             char buf[ksize_+1];
-            for (int i = 0; i<ksize_; ++i)
+            for (int i = 0; i < ksize_; ++i)
                 buf[i] = pcur_[i];
             buf[ksize_] = '\0';
 

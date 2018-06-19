@@ -24,11 +24,9 @@
 namespace kcst {
 
 
-kmer_db* 
+std::unique_ptr<kmer_db>
 kmer_db::new_db(int ksize, int max_mem, db_type type)
 {
-    kmer_db *res = 0;
-
     int kbits = 2*ksize - 1;
     int max_kbits = 8*sizeof(kmer_t) - 1;
     int max_ksize = (max_kbits + 1)/2;
@@ -60,36 +58,29 @@ kmer_db::new_db(int ksize, int max_mem, db_type type)
 
     switch (type)
     {
-        case vector: res = new vector_kmer_db(ksize); break;
-        case map: res = new map_kmer_db(ksize); break;
-        default: raise_error("programmer error 42: falling out of switch");
+        case vector: return std::make_unique<vector_kmer_db>(ksize);
+        case map: return std::make_unique<map_kmer_db>(ksize);
+        default: raise_error("programmer error 42: falling out of switch"); return nullptr;
     }
-
-    return res;
 }
-
 
 static std::string STR_MAGIC = "~kmerdb~";
 static std::string STR_VERSION = "v1";
 static std::string STR_KSIZE_LABEL = "ksize";
 
-kmer_db*
+std::unique_ptr<kmer_db>
 kmer_db::read_db(std::istream &is, int max_mem, db_type type)
 {
-    kmer_db *res = 0;
-
     std::string name, version, ksize_label, dummy;
     int ksize;
 
     is >> name >> version >> ksize_label >> ksize;
 
-    if (name == STR_MAGIC && version == STR_VERSION && ksize_label == STR_KSIZE_LABEL && std::getline(is,dummy))
-    {
-        res = new_db(ksize, max_mem, type);
-        res->read(is);
-    }
-    else
+    if (!(name == STR_MAGIC && version == STR_VERSION && ksize_label == STR_KSIZE_LABEL && std::getline(is,dummy)))
         raise_error("failed to read kmer_db");
+
+    std::unique_ptr<kmer_db> res(new_db(ksize, max_mem, type));
+    res->read(is);
 
     return res;
 }
@@ -103,13 +94,11 @@ kmer_db::write(std::ostream& os) const
     
     os << kloc_vecs_.size() << std::endl;
 
-    std::vector<std::vector<kloc_t> >::const_iterator p = kloc_vecs_.begin();
-    while (p != kloc_vecs_.end())
+    for (const auto& vec : kloc_vecs_)
     {
-        os << p->size() << W;
-        os.write((const char*)static_cast<const void*>(p->data()), p->size() * sizeof(kloc_t));
+        os << vec.size() << W;
+        os.write(reinterpret_cast<const char*>(vec.data()), vec.size() * sizeof(kloc_t));
         os << std::endl;
-        ++p;
     }
 
     return os;

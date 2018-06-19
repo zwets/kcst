@@ -32,11 +32,7 @@ static const std::string KSIZE_LABEL("ksize");
 void
 template_db::clear()
 {
-    if (kmer_db_)
-    {
-        delete kmer_db_;
-        kmer_db_ = 0;
-    }
+    kmer_db_ = nullptr;
 
     seq_ids_.clear();
     seq_lens_.clear();
@@ -57,8 +53,7 @@ template_db::read_binary(std::istream& is)
     getline(is, dummy); // consume newline
 
     if (magic != MAGIC || nseq_label != NSEQ_LABEL || ksize_label != KSIZE_LABEL)
-        raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+'",
-                MAGIC, NSEQ_LABEL, KSIZE_LABEL);
+        raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+'", MAGIC, NSEQ_LABEL, KSIZE_LABEL);
 
     if (ksize != ksize_)
         raise_error("binary template file kmer size (%d) mismatches kmer size %d", ksize, ksize_);
@@ -66,12 +61,12 @@ template_db::read_binary(std::istream& is)
     seq_ids_.reserve(nseq);
     seq_lens_.reserve(nseq);
 
+    std::string seq_id;
+    npos_t seq_len = 0;
+    std::string seq_opt_hdr;
+
     while (nseq-- && is)
     {
-        std::string seq_id;
-        npos_t seq_len;
-        std::string seq_opt_hdr;
-
         is >> seq_id >> seq_len;
         getline(is, seq_opt_hdr); // consume newline, seq headers ignored for now
 
@@ -85,8 +80,7 @@ template_db::read_binary(std::istream& is)
     kmer_db_ = kmer_db::read_db(is, max_mem_);
 
     if (kmer_db_->ksize() != ksize_)
-        raise_error("programmer error 42: kmer_db kmer size %d different from kcst kmer size %d",
-                kmer_db_->ksize(), ksize_);
+        raise_error("programmer error 42: kmer_db kmer size %d different from kcst kmer size %d", kmer_db_->ksize(), ksize_);
 
     std::cerr << "OK" << std::endl;
 
@@ -191,7 +185,7 @@ template_db::query(const std::string& filename, double min_cov_pct) const
         qry_file.open(filename.c_str());
 
         if (!qry_file)
-            raise_error("failed to open query file: %s", filename);
+            raise_error("failed to open query file: %s", filename.c_str());
 
         is = &qry_file;
     }
@@ -201,9 +195,8 @@ template_db::query(const std::string& filename, double min_cov_pct) const
     std::vector<std::vector<char> > targets;
     targets.reserve(seq_lens_.size());
 
-    std::vector<npos_t>::const_iterator plen = seq_lens_.begin() - 1;
-    while (++plen != seq_lens_.end())
-        targets.push_back(std::vector<char>(*plen, '\0'));
+    for (const auto& len : seq_lens_)
+        targets.push_back(std::vector<char>(len, '\0'));
 
     // collect the targets hits by the query
 
@@ -215,18 +208,15 @@ template_db::query(const std::string& filename, double min_cov_pct) const
     {
 	k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
 
-	do {
-	    const std::vector<kloc_t>& locs = kmer_db_->get_klocs(k.knum());
-
-            for (std::vector<kloc_t>::const_iterator p = locs.begin(); p != locs.end(); ++p)
+	do
+            for (const kloc_t& loc : kmer_db_->get_klocs(k.knum()))
             {
-                kloc_t loc = *p;
                 nseq_t sid = loc >> 32;
                 npos_t pos = loc & 0xFFFFFFFF;
                 
                 targets[sid][pos] = '\1';
             }
-        } while (k.inc());
+        while (k.inc());
     }
 
     if (is != &std::cin)
@@ -241,10 +231,7 @@ template_db::query(const std::string& filename, double min_cov_pct) const
         npos_t hits = 0;
         npos_t len = seq_lens_[i];
 
-        std::vector<char>::const_iterator p = targets[i].begin();
-        std::vector<char>::const_iterator pend = targets[i].end();
-        
-        while (p != pend) if (*p++) ++hits;
+        for (const char& c : targets[i]) if (c) ++hits;
 
         double phit = 100.0 * (double)hits / (double)len;
         if (min_cov_pct < phit)

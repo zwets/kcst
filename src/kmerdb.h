@@ -19,6 +19,7 @@
 #define kmerdb_h_INCLUDED
 
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <map>
 
@@ -53,8 +54,8 @@ class kmer_db
         enum db_type { optimal, vector, map };
 
     public:
-        static kmer_db* new_db(int ksize, int mem_gb = 16, db_type = optimal);
-        static kmer_db* read_db(std::istream&, int mem_gb = 16, db_type = optimal);
+        static std::unique_ptr<kmer_db> new_db(int ksize, int mem_gb = 16, db_type = optimal);
+        static std::unique_ptr<kmer_db> read_db(std::istream&, int mem_gb = 16, db_type = optimal);
 
     protected:
         std::vector<std::vector<kloc_t> > kloc_vecs_;

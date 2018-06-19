@@ -1,0 +1,5 @@
+TODOs
+
+- Make kmeriser skip Ns in sequence
+- Rename kcst to kmerhit, make kcst wrapper around it
+

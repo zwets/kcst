@@ -19,6 +19,7 @@
 #define templatedb_h_INCLUDED
 
 #include <iostream>
+#include <memory>
 #include <vector>
 #include "seqreader.h"
 #include "kmerdb.h"
@@ -65,7 +66,7 @@ class template_db
         int ksize_;
         int max_mem_;       // GB, determines the type of kmer_db
         int max_variants_;  // per kmer, when there are degenerate bases
-        kmer_db* kmer_db_;
+        std::unique_ptr<kmer_db> kmer_db_;
         std::vector<std::string> seq_ids_;
         std::vector<kcnt_t> seq_lens_;
 
@@ -73,8 +74,7 @@ class template_db
 
     public:
         template_db(int ksize, int max_mem, int max_variants) 
-            : ksize_(ksize), max_mem_(max_mem), max_variants_(max_variants), kmer_db_(0) { }
-        ~template_db() { delete kmer_db_; }
+            : ksize_(ksize), max_mem_(max_mem), max_variants_(max_variants) { }
 
         std::istream& read_binary(std::istream&);
         std::istream& read_fasta(std::istream&);

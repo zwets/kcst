@@ -42,7 +42,7 @@ static void fill_db(kmer_db& db)
     db.add_kloc((1<<5)-1, 9);
 }
 
-static bool write_db(const kmer_db *db)
+static bool write_db(const kmer_db* db)
 {
     std::ofstream f(scratch_fname);
     return f.is_open() && db->write(f);
@@ -66,16 +66,14 @@ TEST(read_write_test, read_empty) {
     std::ifstream fi(scratch_fname);
     ASSERT_TRUE(fi.is_open());
 
-    kmer_db *dbi = kmer_db::read_db(fi);
+    std::unique_ptr<kmer_db> dbi(kmer_db::read_db(fi));
     fi.close();
 
-    ASSERT_NE((kmer_db*)0, dbi);
+    ASSERT_NE(nullptr, dbi);
     EXPECT_EQ(5, dbi->ksize());
 
     for (size_t i = 0; i < (1<<5); ++i)
         EXPECT_EQ(0, dbi->get_klocs(i).size());
-
-    delete dbi;
 }
 
 TEST(read_write_test, vector_db_rw) {
@@ -87,10 +85,10 @@ TEST(read_write_test, vector_db_rw) {
     std::ifstream fi(scratch_fname);
     ASSERT_TRUE(fi.is_open());
 
-    kmer_db *db1 = kmer_db::read_db(fi, 1, kmer_db::db_type::vector);
+    std::unique_ptr<kmer_db> db1(kmer_db::read_db(fi, 1, kmer_db::db_type::vector));
     fi.close();
 
-    ASSERT_NE((kmer_db*)0, db1);
+    ASSERT_NE(nullptr, db1);
     EXPECT_EQ(5, db1->ksize());
 
     for (kmer_t i = 0; i < (1<<5); ++i)
@@ -102,8 +100,6 @@ TEST(read_write_test, vector_db_rw) {
         for (size_t j = 0; j < v0.size(); ++j)
             EXPECT_EQ(v0.at(j), v1.at(j));
     }
-
-    delete db1;
 }
 
 TEST(read_write_test, map_db_rw) {
@@ -115,10 +111,10 @@ TEST(read_write_test, map_db_rw) {
     std::ifstream fi(scratch_fname);
     ASSERT_TRUE(fi.is_open());
 
-    kmer_db *db1 = kmer_db::read_db(fi,1,kmer_db::db_type::map);
+    std::unique_ptr<kmer_db> db1(kmer_db::read_db(fi,1,kmer_db::db_type::map));
     fi.close();
 
-    ASSERT_NE((kmer_db*)0, db1);
+    ASSERT_NE(nullptr, db1);
     EXPECT_EQ(5, db1->ksize());
 
     for (kmer_t i = 0; i < (1<<5); ++i)
@@ -130,8 +126,6 @@ TEST(read_write_test, map_db_rw) {
         for (size_t j = 0; j < v0.size(); ++j)
             EXPECT_EQ(v0.at(j), v1.at(j));
     }
-
-    delete db1;
 }
 
 TEST(read_write_test, vec_to_map) {
@@ -142,11 +136,10 @@ TEST(read_write_test, vec_to_map) {
 
     std::ifstream fi(scratch_fname);
     ASSERT_TRUE(fi.is_open());
-
-    kmer_db *db1 = kmer_db::read_db(fi,1,kmer_db::db_type::map);
+    std::unique_ptr<kmer_db> db1(kmer_db::read_db(fi,1,kmer_db::db_type::map));
     fi.close();
 
-    ASSERT_NE((kmer_db*)0, db1);
+    ASSERT_NE(nullptr, db1);
     EXPECT_EQ(5, db1->ksize());
 
     for (kmer_t i = 0; i < (1<<5); ++i)
@@ -158,8 +151,6 @@ TEST(read_write_test, vec_to_map) {
         for (size_t j = 0; j < v0.size(); ++j)
             EXPECT_EQ(v0.at(j), v1.at(j));
     }
-
-    delete db1;
 }
 
 TEST(read_write_test, map_to_vec) {
@@ -171,10 +162,10 @@ TEST(read_write_test, map_to_vec) {
     std::ifstream fi(scratch_fname);
     ASSERT_TRUE(fi.is_open());
 
-    kmer_db *db1 = kmer_db::read_db(fi,1,kmer_db::db_type::vector);
+    std::unique_ptr<kmer_db> db1(kmer_db::read_db(fi,1,kmer_db::db_type::vector));
     fi.close();
 
-    ASSERT_NE((kmer_db*)0, db1);
+    ASSERT_NE(nullptr, db1);
     EXPECT_EQ(5, db1->ksize());
 
     for (kmer_t i = 0; i < (1<<5); ++i)
@@ -186,8 +177,6 @@ TEST(read_write_test, map_to_vec) {
         for (size_t j = 0; j < v0.size(); ++j)
             EXPECT_EQ(v0.at(j), v1.at(j));
     }
-
-    delete db1;
 }
 
 } // namespace

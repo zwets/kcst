@@ -4,7 +4,7 @@ OBJS = kcst.o templatedb.o seqreader.o kmerdb.o vectordb.o mapdb.o kmeriser.o km
 
 HDRS = templatedb.h seqreader.h kmerdb.h kmerise.h readwrite.h utils.h
 
-CXXFLAGS += -O2 -g -Wall -Wextra -std=c++11
+CXXFLAGS += -O2 -g -Wall -Wextra -std=c++14
 
 all: kcst
 
