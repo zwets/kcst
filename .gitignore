@@ -1,7 +1,6 @@
 khc
-all-tests
+run-all-tests
 testfile.tmp
-test-int-sizes
 *.o
 *.a
 a.out

@@ -125,30 +125,33 @@ template_db::read_fasta(std::istream& is)
     return is;
 }
 
+std::istream& 
+template_db::read(std::istream& is)
+{
+    if (is.peek() == '~')
+        read_binary(is);
+    else
+        read_fasta(is);
+}
+
 void 
 template_db::read(const std::string& filename)
 {
-    std::ifstream db_file;
-    std::istream *is = &std::cin;
-
-    if (filename != "-")
+    if (filename.empty() || filename == "-")
+        read(std::cin);
+    else
     {
-        db_file.open(filename.c_str());
+        std::ifstream db_file(filename);
 
         if (!db_file)
             raise_error("cannot open file: %s", filename.c_str());
 
-        is = &db_file;
+        read(db_file);
     }
-
-    if (is->peek() == '~')
-        read_binary(*is);
-    else
-        read_fasta(*is);
 }
 
 std::ostream&
-template_db::write(std::ostream& os)
+template_db::write(std::ostream& os) const
 {
     static const char W = ' ';
     os << MAGIC << W << NSEQ_LABEL << W << seq_ids_.size() << W << KSIZE_LABEL << W << ksize_ << std::endl;
@@ -163,7 +166,7 @@ template_db::write(std::ostream& os)
 }
 
 bool
-template_db::write(const std::string& filename)
+template_db::write(const std::string& filename) const
 {
     std::ofstream os(filename.c_str());
 

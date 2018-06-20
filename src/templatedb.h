@@ -78,10 +78,11 @@ class template_db
 
         std::istream& read_binary(std::istream&);
         std::istream& read_fasta(std::istream&);
+        std::istream& read(std::istream&);
         void read(const std::string&);
 
-        std::ostream& write(std::ostream&);
-        bool write(const std::string&);
+        std::ostream& write(std::ostream&) const;
+        bool write(const std::string&) const;
 
         query_result query(const std::string&, double min_cov_pct = 1.0) const;
 };
