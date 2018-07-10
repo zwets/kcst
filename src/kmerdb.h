@@ -93,10 +93,10 @@ class vector_kmer_db : public kmer_db
     public:
         vector_kmer_db(int ksize);
 
-        void add_kloc(kmer_t, kloc_t);
-        const std::vector<kloc_t>& get_klocs(kmer_t) const;
+        virtual void add_kloc(kmer_t, kloc_t);
+        virtual const std::vector<kloc_t>& get_klocs(kmer_t) const;
 
-        std::ostream& write(std::ostream&) const;
+        virtual std::ostream& write(std::ostream&) const;
 };
 
 
@@ -119,10 +119,10 @@ class map_kmer_db : public kmer_db
     public:
         map_kmer_db(int ksize);
 
-        void add_kloc(kmer_t kmer, kloc_t loc);
-        const std::vector<kloc_t>& get_klocs(kmer_t) const;
+        virtual void add_kloc(kmer_t kmer, kloc_t loc);
+        virtual const std::vector<kloc_t>& get_klocs(kmer_t) const;
 
-        std::ostream& write(std::ostream&) const;
+        virtual std::ostream& write(std::ostream&) const;
 };
 
 

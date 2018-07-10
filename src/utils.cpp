@@ -19,6 +19,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdarg>
+#include <cstdlib>
 #include "utils.h"
 
 namespace khc {

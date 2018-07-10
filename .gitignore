@@ -1,8 +1,11 @@
 khc
 run-all-tests
-testfile.tmp
+*.tmp
 *.o
 *.a
 a.out
 *.f?a
 *.bin
+.project
+.cproject
+.settings

@@ -32,14 +32,14 @@ using namespace khc;
 static const int MAX_VARIANTS_PER_KMER = 64;
 static const int DEFAULT_KSIZE = 13;
 static const int DEFAULT_MEM = 16; // GB
-static const double DEFAULT_COV = 99.0;
+static const double DEFAULT_COV = 90.0;
 static const int MAX_KSIZE = 31;
 
 static const std::string USAGE("\n"
-"Usage: khc [-k KSIZE] [-m MEM] [-w] [-v] SUBJECTS [QUERY]\n"
+"Usage: khc [-k KSIZE] [-c COV] [-m MEM] [-w FILE] [-v] SUBJECTS [QUERY]\n"
 "\n"
 "  Count for each sequence in SUBJECTS the number of kmers from QUERY that\n"
-"  hit it.\n"
+"  hit it.  Report every sequence with at least COV percent base coverage.\n"
 "\n"
 "  @DOCUMENTATION will follow once stabilised\n"
 "\n");
@@ -108,6 +108,7 @@ int main (int, char *argv[])
 
         if (tpl_fname.empty())
         {
+            std::cerr << "__cplusplus = " << __cplusplus << std::endl;
             std::cerr << USAGE;
             return 1;
         }

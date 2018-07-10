@@ -24,9 +24,9 @@ using namespace khc;
 
 namespace {
 
-static const char *fasta_fname = "test.fasta";
-static const char *fastq_fname = "test.fastq";
-static const char *bare_fname = "test.bare";
+static const char *fasta_fname = "data/test.fasta";
+static const char *fastq_fname = "data/test.fastq";
+static const char *bare_fname = "data/test.bare";
 
 TEST(seqreader_test, read_fasta) {
 

@@ -78,10 +78,10 @@ template_db::read_binary(std::istream& is)
     if (!is)
         raise_error("failed to read sequence section from binary template file");
 
-    kmer_db_ = kmer_db::read_db(is, max_mem_);
+    kmer_db_ = seq_ids_.size() == 0 ? nullptr : kmer_db::read_db(is, max_mem_);
 
-    if (kmer_db_->ksize() != ksize_)
-        raise_error("programmer error 42: kmer_db kmer size %d different from khc kmer size %d", kmer_db_->ksize(), ksize_);
+    if (kmer_db_ && kmer_db_->ksize() != ksize_)
+    	raise_error("programmer error 42: kmer_db kmer size %d different from khc kmer size %d", kmer_db_->ksize(), ksize_);
 
     std::cerr << "OK" << std::endl;
 
@@ -132,6 +132,8 @@ template_db::read(std::istream& is)
         read_binary(is);
     else
         read_fasta(is);
+
+    return is;
 }
 
 void 
@@ -208,20 +210,21 @@ template_db::query(const std::string& filename, double min_cov_pct) const
     kmeriser k(ksize_);
     sequence seq;
 
-    while (qry_reader.next(seq))
-    {
-	k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
+    if (kmer_db_) // defensive
+		while (qry_reader.next(seq))
+		{
+			k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
 
-	do
-            for (const kloc_t& loc : kmer_db_->get_klocs(k.knum()))
-            {
-                nseq_t sid = loc >> 32;
-                npos_t pos = loc & 0xFFFFFFFF;
-                
-                targets[sid][pos] = '\1';
-            }
-        while (k.inc());
-    }
+			do
+				for (const kloc_t& loc : kmer_db_->get_klocs(k.knum()))
+				{
+					nseq_t sid = loc >> 32;
+					npos_t pos = loc & 0xFFFFFFFF;
+
+					targets[sid][pos] = '\1';
+				}
+			while (k.inc());
+		}
 
     if (is != &std::cin)
         qry_file.close();

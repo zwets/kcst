@@ -9,38 +9,64 @@ Home: <https://github.com/zwets/kcst>
 
 ## Introduction
 
-`kcst` predicts species and multi-locus sequence type from assembled or
-raw reads.  It does this by comparing the kmers in the query sequences with
-those found in the MLST profiles, and picking the alleles most hit by the
-query.
+`kcst` predicts species and multi-locus sequence type from assembled or raw
+reads.  It does this by comparing the kmers in the query sequences with those
+found in the MLST profiles, picking the alleles best covered by the query.
 
 `kcst` does this 'all in one go'.  Instead of first predicting species in
-order to pick the applicable MLST schema, it matches the query with _all_
-MLST alleles at once.
+order to pick the applicable MLST schema, it matches the query across all MLST
+alleles.
 
 
-## Running
+## Quick Start
 
+Assuming you are on a GNU/Linux system, and you have just cloned `kcst` from
+GitHub, here are the steps to run it:
+
+* Install requirements
+
+  To build `kcst` you need a C++ compiler and GNU `make`.  If your system
+  doesn't already have these, figuring out how to install them should be easy.
+  On Ubuntu: `apt install g++ make`.
+
+  To run `kcst` you need GNU awk (`gawk`), which probably is already on your
+  system, or else can be easily installed.  On Ubuntu: `apt install gawk`.
+  `awk` is used by the wrapper scripts that drive the binary (C++) core.
+
+* Build Sources
+
+      # Compile the sources
+      cd src
+      make
+
+      # Optionally compile and run unit tests
+      cd src/test
+      make test
+
+* Run Core
+
+  The binary core of `kcst` is `khc` (for _k_mer _h_it _c_ount).  It can be
+  used standalone as a tool to rapidly compare two sequences for similarity:
+
+      cd src
+      ./khc 
+
+* Run `kcst`
+   
     # Perform a kmer hit count of QUERY on SUBJECTS
-    ./kch [OPTIONS] SUBJECTS [QUERY]
+    ./khc [OPTIONS] SUBJECTS [QUERY]
 
     # In progress: perform kmer counting ST
     ./kcst [OPTIONS] SUBJECTS [QUERY]
 
 ## Building
 
-    # Compile the sources
-    cd src
-    make
-
-    # Optionally compile and run unit tests
-    cd src/test
-    make test
-   
-
-## Installation
+## Installing
 
 `kcst` has no dependencies or installation requirements.  Just run it.
+
+## Database
+
 
 
 ---
