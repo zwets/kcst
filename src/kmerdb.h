@@ -26,103 +26,80 @@
 namespace khc {
 
 
-// knum_t - the number type used to store an encoded kmer
-//
+// We define types kmer_t, kloc_t, and kcnt_t as the integral number types
+// to respectively hold an encoded kmer, a kmer location, and a kmer count.
+
+// kmer_t - the number type used to store an encoded kmer
+// 
 typedef std::uint_fast64_t kmer_t;
 
 // kloc_t - the type used to store a kmer location
-//
+// 
 typedef std::uint64_t kloc_t;
 
-// kcnt_t - the type used for counting kmers in the database
-// 
+// kcnt_t - the type used to count kmers
+//
 typedef std::uint32_t kcnt_t;
 
 
-// Abstract base class holding a collection of kmer->location mappings.
+// A 'kmer_db' hold a mapping from kmer_t to vector<kloc_t>, in other words,
+// it stores for each kmer the list of locations where it occurs.  Its core
+// operations are add_kloc(k,p) to add location p for kmer k, and get_klocs(k)
+// to retrieve the list of locations p where k occurs
 //
-// The two core operations are add_kloc(k,p) to assert that kmer k occurs
-// at location p, and get_klocs(k) returning the list of p's where k occurs.
+// We have two kmer_db implementations: vector_kmer_db and map_kmer_db.  The
+// vector implementation is fast but memory hungry: O(1) time by O(4^ksize)
+// storage.  The map db is O(log(ksize)) time by O(ksize) storage.
+// 
+// The two implementations have the same interface and semantics, but for
+// performance reasons are not subclassed from an abstract base.
+
+
+// vector_kmer_db
 //
-// Concrete subclasses provide different implementations, with differing
-// memory and access time characteristics.  Use factory method new_db()
-// to get an appropriate implementation given ksize and memory limit.
+// Holds a vector indexed by kmer.  Each element points to its vector of klocs.
 //
-class kmer_db
-{
-    public:
-        enum db_type { optimal, vector, map };
-
-    public:
-        static std::unique_ptr<kmer_db> new_db(int ksize, int mem_gb = 16, db_type = optimal);
-        static std::unique_ptr<kmer_db> read_db(std::istream&, int mem_gb = 16, db_type = optimal);
-
-    protected:
-        std::vector<std::vector<kloc_t> > kloc_vecs_;
-        int ksize_;
-
-        virtual std::istream& read(std::istream&);
-        
-    public:
-        kmer_db(int ksize) : kloc_vecs_(1), ksize_(ksize) { }
-        virtual ~kmer_db() { }
-
-        int ksize() { return ksize_; }
-
-        virtual void add_kloc(kmer_t, kloc_t) = 0;
-        virtual const std::vector<kloc_t>& get_klocs(kmer_t) const = 0;
-
-        virtual std::ostream& write(std::ostream&) const;
-};
-
-
-// Concrete kmer_db that keeps the lists of klocs in a vector indexed by kmer.
-//
-// The big advantage of this class is its O(1) lookup time, which makes both
-// storing and looking up very quick.  Its downsize is its O(4^ksize) memory
-// complexity, which gets big quickly.
-//
-class vector_kmer_db : public kmer_db
+class vector_kmer_db
 {
     private:
         std::vector<kcnt_t> vec_ptrs_;
-
-    protected:
-        std::istream& read(std::istream&);
+        std::vector<std::vector<kloc_t> > kloc_vecs_;
+        int ksize_;
 
     public:
         vector_kmer_db(int ksize);
 
-        virtual void add_kloc(kmer_t, kloc_t);
-        virtual const std::vector<kloc_t>& get_klocs(kmer_t) const;
+        void add_kloc(kmer_t, kloc_t);
+        const std::vector<kloc_t>& get_klocs(kmer_t) const;
 
-        virtual std::ostream& write(std::ostream&) const;
+        void clear();
+
+        std::istream& read(std::istream&);
+        std::ostream& write(std::ostream&) const;
 };
 
 
-// Concrete kmer_db class that holds the kmer index in a map (red-black tree).
+// map_kmer_db
 //
-// In terms of storage, this is much more efficient than the vector variant,
-// as it only stores kmers we actually encounter.  This number is bound by the
-// number of klocs (i.e. the number of bases stored).
+// Holds a map keyed by kmer.  Each value points to the vector of klocs.
 //
-// Access time is in the order O(log N).
-//
-class map_kmer_db : public kmer_db
+class map_kmer_db
 {
     private:
         std::map<kmer_t,kcnt_t> vec_ptrs_;
-
-    protected:
-        std::istream& read(std::istream&);
+        std::vector<std::vector<kloc_t> > kloc_vecs_;
+        int ksize_;
 
     public:
         map_kmer_db(int ksize);
 
-        virtual void add_kloc(kmer_t kmer, kloc_t loc);
-        virtual const std::vector<kloc_t>& get_klocs(kmer_t) const;
+        void add_kloc(kmer_t kmer, kloc_t loc);
+        const std::vector<kloc_t>& get_klocs(kmer_t) const;
 
-        virtual std::ostream& write(std::ostream&) const;
+        void clear();
+
+        std::istream& read(std::istream&);
+        std::ostream& write(std::ostream&) const;
 };
 
 

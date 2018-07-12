@@ -1,6 +1,6 @@
 CXXFLAGS += -std=c++14 -O3 -DNDEBUG -Wall -Wextra -pedantic -mtune=native
 
-OBJS = khc.o templatedb.o seqreader.o kmerdb.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
+OBJS = khc.o templatedb.o seqreader.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
 
 LIBS =
 

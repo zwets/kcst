@@ -21,9 +21,10 @@
 
 namespace khc {
 
-
+// constructor - note we initialise kloc_vecs_[0] as the empty vector
+// 
 map_kmer_db::map_kmer_db(int ksize)
-    : kmer_db(ksize)
+    : kloc_vecs_(1), ksize_(ksize)
 {
 }
 

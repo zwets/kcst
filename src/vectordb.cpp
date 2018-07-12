@@ -23,7 +23,7 @@ namespace khc {
 
 
 vector_kmer_db::vector_kmer_db(int ksize)
-    : kmer_db(ksize), vec_ptrs_(1L<<(2*ksize-1), 0)
+    : vec_ptrs_(1L<<(2*ksize-1), 0), kloc_vecs_(1), ksize_(ksize)
 {
 }
 
