@@ -17,13 +17,29 @@
  */
 
 #include <iostream>
+#include <string>
 #include <cstdio>
 #include <cstdarg>
 #include <cstdlib>
+#include <unistd.h>
 #include "utils.h"
 
 namespace khc {
 
+static bool verbose = false;
+static const char* progname = "[verbose]";
+
+void
+set_progname(const char *p)
+{
+    progname = p;
+}
+
+void
+set_verbose(bool v)
+{
+    verbose = v;
+}
 
 void
 raise_error(const char *fmt, ...)
@@ -35,10 +51,31 @@ raise_error(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 
-    std::cerr << buf << std::endl;
+    std::cerr << progname << ":" << buf << std::endl;
     std::exit(1);
 }
-     
+
+void
+verbose_emit(const char *fmt, ...)
+{
+    if (verbose)
+    {
+        char buf[2048];
+
+        va_list ap;
+        va_start(ap, fmt);
+        vsnprintf(buf, sizeof(buf), fmt, ap);
+        va_end(ap);
+
+        std::cerr << ":" << buf << std::endl;
+    }
+}
+
+unsigned long long
+get_system_memory()
+{
+    return (static_cast<unsigned long long>(sysconf(_SC_PHYS_PAGES)) * static_cast<unsigned long long>(sysconf(_SC_PAGE_SIZE)));
+}
 
 } // namespace khc
 

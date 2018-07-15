@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -108,7 +109,6 @@ int main (int, char *argv[])
 
         if (tpl_fname.empty())
         {
-            std::cerr << "__cplusplus = " << __cplusplus << std::endl;
             std::cerr << USAGE;
             return 1;
         }
@@ -118,17 +118,25 @@ int main (int, char *argv[])
 
             // READ TEMPLATE DB
 
-        template_db tpldb(ksize, max_mem, MAX_VARIANTS_PER_KMER);
-        tpldb.read(tpl_fname);
+        std::ifstream tpl_file(tpl_fname);
+        if (!tpl_file)
+	{ 
+            std::cerr << "failed to open template file: " << tpl_fname << std::endl;
+            return 1;
+        }
+
+        std::unique_ptr<template_db> tpldb = template_db::read(tpl_file, max_mem, ksize, MAX_VARIANTS_PER_KMER);
+
+        tpl_file.close();
 
             // WRITE TEMPLATE DB
 
-        if (!out_fname.empty() && !tpldb.write(out_fname))
+        if (!out_fname.empty() && !tpldb->write(out_fname))
             std::cerr << "failed to write template binary file: " << out_fname << std::endl;
 
             // PERFORM QUERY
 
-        query_result res = tpldb.query(qry_fname, min_cov);
+        query_result res = tpldb->query(qry_fname, min_cov);
 
             // SHOW RESULT
 

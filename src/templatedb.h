@@ -26,8 +26,21 @@
 
 namespace khc {
 
+// This header defines class template_db, the object that reads the template
+// sequences, and can then be 'kmer-blasted' with query sequences to obtain
+// seq_hits per template sequence.
 
-// nseq_t - number type to hold sequence count
+// The template_db uses a kmer_db to hold the kmer->locations mapping, and
+// holds for each sequence its header (ID) and length.  When queried with a
+// query, it tracks not only how many times each template sequence was hit,
+// but also _where_ it was hit, so we obtain precise base coverage statistics.
+
+// Each kmer location is a pair <seq,pos>, where seq indexes into the list
+// of sequences, and pos is the base position on that sequence.  As kmer_db
+// holds kmer locations as 'opaque' 64-bit numbers (kloc_t), the obvious
+// encoding is ((seq << 32) | pos), where seq and pos are 32-bit uints.
+
+// nseq_t - number type to hold sequence number (index into vector)
 //
 typedef std::uint32_t nseq_t;
 
@@ -36,7 +49,7 @@ typedef std::uint32_t nseq_t;
 typedef std::uint32_t npos_t;
 
 
-// query_result - return value of template_db::query()
+// query_result - vector of seq_hits, return value of template_db::query()
 //
 struct seq_hits
 {
@@ -50,41 +63,53 @@ typedef std::vector<seq_hits> query_result;
 
 
 // template_db - holds the template sequences against which to run queries
-//
-// It can be queried with a collection of kmers from a query sequence, and
-// reports the hit counts on each template sequence.
-//
-// A template_db is read either from FASTA, or from an optimised binary file
-// which it has previously written.  Its read method can autodetects the format.
-//
-// template_db uses a kmer_db to manage the kmer-klocs mapping, and a list of
-// sequence ID and length of each sequence.
-//
+
+// This superclass defines the abstract interface for the two implementations
+// (vector versus map based, see kmer_db), and the factory methods to read a
+// template_db from either a FASTA file or an optimised binary file that it
+// has previously written.
+
+// Its main interface function is query, which takes a filename or "-" for
+// stdin, and returns the list of sequences hit by the kmers in the file.
+
 class template_db
 {
-    private:
-        int ksize_;
-        int max_mem_;       // GB, determines the type of kmer_db
-        int max_variants_;  // per kmer, when there are degenerate bases
-        std::unique_ptr<kmer_db> kmer_db_;
+    protected:
         std::vector<std::string> seq_ids_;
         std::vector<kcnt_t> seq_lens_;
 
-        void clear();
+        static std::unique_ptr<template_db> create_db(int ksize, int max_gb = 0);
+
+        virtual int ksize() const = 0;
+        virtual std::istream& read_binary(std::istream&, nseq_t nseq) = 0;
+        virtual std::istream& read_fasta(std::istream&, int max_vars) = 0;
+        virtual void write_kmer_db(std::ostream&) const = 0;
 
     public:
-        template_db(int ksize, int max_mem, int max_variants) 
-            : ksize_(ksize), max_mem_(max_mem), max_variants_(max_variants) { }
+        static std::unique_ptr<template_db> read(std::istream&, int max_gb = 0, int ksize = 0, int max_vars = 0);
 
-        std::istream& read_binary(std::istream&);
-        std::istream& read_fasta(std::istream&);
-        std::istream& read(std::istream&);
-        void read(const std::string&);
+    public:
+        virtual query_result query(const std::string&, double min_cov_pct = 1.0) const = 0;
 
         std::ostream& write(std::ostream&) const;
         bool write(const std::string&) const;
+};
 
-        query_result query(const std::string&, double min_cov_pct = 1.0) const;
+template <typename kmer_db_t>
+class template_db_impl : public template_db
+{
+    private:
+        kmer_db_t kmer_db_;
+
+    protected:
+        virtual int ksize() const { return kmer_db_.ksize(); }
+        virtual std::istream& read_binary(std::istream&, nseq_t nseq);
+        virtual std::istream& read_fasta(std::istream&, int max_vars);
+        virtual void write_kmer_db(std::ostream& os) const { kmer_db_.write(os); }
+
+    public:
+        template_db_impl(int ksize) : kmer_db_(ksize) { }
+        virtual query_result query(const std::string&, double min_cov_pct = 1.0) const;
 };
 
 

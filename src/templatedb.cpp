@@ -27,145 +27,128 @@ namespace khc {
 
 static const std::string MAGIC("~khc~");
 static const std::string NSEQ_LABEL("nseq");
+static const std::string NBASES_LABEL("nbases");
 static const std::string KSIZE_LABEL("ksize");
 
-void
-template_db::clear()
+
+std::unique_ptr<template_db>
+template_db::create_db(int ksize, int max_gb)
 {
-    kmer_db_ = nullptr;
+    template_db *ret;
 
-    seq_ids_.clear();
-    seq_lens_.clear();
-}
+    int kbits = 2*ksize - 1;
+    int max_kbits = 8*sizeof(kmer_t) - 1;
+    int max_ksize = (max_kbits + 1)/2;
 
-std::istream&
-template_db::read_binary(std::istream& is)
-{
-    std::cerr << "reading binary template database ... ";
+    if (kbits > max_kbits)
+        raise_error("kmer size %d is larger than max supported %d"
+                " (it requires %d bits but kmerdb was compiled for %d bits);"
+                " either reduce kmer size, or recompile with a larger kmer_t",
+                ksize, max_ksize, kbits, max_kbits);
 
-    this->clear();
+    kmer_t vec_mb = sizeof(std::vector<kcnt_t>) * (static_cast<std::uintmax_t>(1) << (kbits > 20 ? kbits - 20 : 0));
+    kmer_t max_mb = static_cast<std::uintmax_t>(max_gb) << 10;
 
-    std::string magic, nseq_label, ksize_label, dummy;
-    nseq_t nseq;
-    int ksize;
-
-    is >> magic >> nseq_label >> nseq >> ksize_label >> ksize;
-    getline(is, dummy); // consume newline
-
-    if (magic != MAGIC || nseq_label != NSEQ_LABEL || ksize_label != KSIZE_LABEL)
-        raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+'",
-                MAGIC.c_str(), NSEQ_LABEL.c_str(), KSIZE_LABEL.c_str());
-
-    if (ksize != ksize_)
-        raise_error("binary template file kmer size (%d) mismatches kmer size %d", ksize, ksize_);
-
-    seq_ids_.reserve(nseq);
-    seq_lens_.reserve(nseq);
-
-    std::string seq_id;
-    npos_t seq_len = 0;
-    std::string seq_opt_hdr;
-
-    while (nseq-- && is)
+    if (max_gb == 0)
     {
-        is >> seq_id >> seq_len;
-        getline(is, seq_opt_hdr); // consume newline, seq headers ignored for now
+        unsigned long phy_mb = get_system_memory() >> 20;
+        max_mb = phy_mb > 2048 ? phy_mb - 2048 : phy_mb;
 
-        seq_ids_.push_back(seq_id);
-        seq_lens_.push_back(seq_len);
+        verbose_emit("defaulting max memory to all%s physical memory: %luG",
+                phy_mb > 2048 ? " but 2G" : "",
+                static_cast<unsigned long>(max_mb >> 10));
     }
 
-    if (!is)
-        raise_error("failed to read sequence section from binary template file");
-
-    kmer_db_ = seq_ids_.size() == 0 ? nullptr : kmer_db::read_db(is, max_mem_);
-
-    if (kmer_db_ && kmer_db_->ksize() != ksize_)
-    	raise_error("programmer error 42: kmer_db kmer size %d different from khc kmer size %d", kmer_db_->ksize(), ksize_);
-
-    std::cerr << "OK" << std::endl;
-
-    return is;
-}
-
-std::istream&
-template_db::read_fasta(std::istream& is)
-{
-    std::cerr << "reading FASTA template database ... ";
-
-    this->clear();
-
-    kmer_db_ = kmer_db::new_db(ksize_, max_mem_);
-
-    sequence_reader reader(is, sequence_reader::fasta);
-    kmerator k(ksize_, max_variants_);
-
-    sequence seq;
-    nseq_t seq_cnt = 0;
-
-    while (reader.next(seq))
+    if (vec_mb > max_mb)
     {
-        seq_ids_.push_back(seq.id);
-        seq_lens_.push_back(seq.data.length() - ksize_ + 1);
+        verbose_emit("vector memory (%luG) would exceed %luG: creating map database",
+                static_cast<unsigned long>(vec_mb >> 10),
+                static_cast<unsigned long>(max_mb >> 10));
 
-        k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
-
-        kloc_t loc = seq_cnt++;
-        loc = (loc << 32) - 1;
-
-        do {
-            if (!k.variant())
-                ++loc;
-            kmer_db_->add_kloc(k.knum(), loc);
-        } while (k.inc());
+        ret = new template_db_impl<map_kmer_db>(ksize);
     }
+    else
+    {
+        verbose_emit("vector memory (%luG) fits %luG: creating vector database",
+                static_cast<unsigned long>(vec_mb >> 10),
+                static_cast<unsigned long>(max_mb >> 10));
 
-    std::cerr << "OK" << std::endl;
-
-    return is;
+        ret = new template_db_impl<vector_kmer_db>(ksize);
+    }
+ 
+    return std::unique_ptr<template_db>(ret);
 }
 
-std::istream& 
-template_db::read(std::istream& is)
+std::unique_ptr<template_db>
+template_db::read(std::istream& is, int max_gb, int ksize, int max_vars)
 {
+    std::unique_ptr<template_db> ret;
+
     if (is.peek() == '~')
-        read_binary(is);
-    else
-        read_fasta(is);
+    {
+        verbose_emit("reading binary template database");
 
-    return is;
-}
+        std::string magic, nseq_label, nbases_label, ksize_label, dummy;
+        nseq_t nseq;
+        kloc_t nbases;
+        int db_ksize;
 
-void 
-template_db::read(const std::string& filename)
-{
-    if (filename.empty() || filename == "-")
-        read(std::cin);
+        is >> magic >> nseq_label >> nseq >> nbases_label >> nbases >> ksize_label >> db_ksize;
+        getline(is, dummy); // consume newline
+
+        if (magic != MAGIC || nseq_label != NSEQ_LABEL || nbases_label != nbases_label || ksize_label != KSIZE_LABEL)
+            raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+ %s [0-9]+'",
+                    MAGIC.c_str(), NSEQ_LABEL.c_str(), NBASES_LABEL.c_str(), KSIZE_LABEL.c_str());
+
+        if (ksize != 0 && ksize != db_ksize)
+            raise_error("specified ksize %d mismatches binary template file ksize: %d",
+                    ksize, db_ksize);
+
+        if (max_vars != 0)
+            raise_error("max variants cannot be specified when template database is binary");
+
+        ret = create_db(db_ksize, max_gb);
+        ret->read_binary(is, nseq);
+    }
     else
     {
-        std::ifstream db_file(filename);
+        verbose_emit("reading FASTA template database");
 
-        if (!db_file)
-            raise_error("cannot open file: %s", filename.c_str());
+        if (ksize == 0)
+            raise_error("ksize must be specified");
 
-        read(db_file);
+        if (max_vars == 0)
+            raise_error("max variants must be specified");
+
+        ret = create_db(ksize, max_gb);
+        ret->read_fasta(is, max_vars);
     }
+
+    return ret;
 }
+
 
 std::ostream&
 template_db::write(std::ostream& os) const
 {
     static const char W = ' ';
-    os << MAGIC << W << NSEQ_LABEL << W << seq_ids_.size() << W << KSIZE_LABEL << W << ksize_ << std::endl;
 
-    for (size_t i = 0; i != seq_ids_.size(); ++i)
+    kloc_t nbases = 0;
+
+    for (const auto& len : seq_lens_) nbases += len;
+    os << MAGIC << W << 
+        NSEQ_LABEL << W << seq_ids_.size() << W << 
+        NBASES_LABEL << nbases << W << 
+        KSIZE_LABEL << W << ksize() << std::endl;
+
+    for (nseq_t i = 0; i != seq_ids_.size(); ++i)
         os << seq_ids_[i] << W << seq_lens_[i] /* << seq_hdrs_[i] */ << std::endl;
 
-    if (kmer_db_)
-        kmer_db_->write(os);
+    write_kmer_db(os);
 
     return os;
 }
+
 
 bool
 template_db::write(const std::string& filename) const
@@ -180,8 +163,9 @@ template_db::write(const std::string& filename) const
     return (bool)os;
 }
 
+template<typename kmer_db_t>
 query_result
-template_db::query(const std::string& filename, double min_cov_pct) const
+template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_pct) const
 {
     std::ifstream qry_file;
     std::istream* is = &std::cin;
@@ -207,24 +191,23 @@ template_db::query(const std::string& filename, double min_cov_pct) const
     // collect the targets hits by the query
 
     sequence_reader qry_reader(*is);
-    kmeriser k(ksize_);
+    kmeriser k(kmer_db_.ksize());
     sequence seq;
 
-    if (kmer_db_) // defensive
-		while (qry_reader.next(seq))
-		{
-			k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
+    while (qry_reader.next(seq))
+    {
+        k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
 
-			do
-				for (const kloc_t& loc : kmer_db_->get_klocs(k.knum()))
-				{
-					nseq_t sid = loc >> 32;
-					npos_t pos = loc & 0xFFFFFFFF;
+        do
+            for (const kloc_t& loc : kmer_db_.get_klocs(k.knum()))
+            {
+                nseq_t sid = loc >> 32;
+                npos_t pos = loc & 0xFFFFFFFF;
 
-					targets[sid][pos] = '\1';
-				}
-			while (k.inc());
-		}
+                targets[sid][pos] = '\1';
+            }
+        while (k.inc());
+    }
 
     if (is != &std::cin)
         qry_file.close();
@@ -246,6 +229,66 @@ template_db::query(const std::string& filename, double min_cov_pct) const
     }
 
     return res;
+}
+
+template<typename kmer_db_t>
+std::istream& 
+template_db_impl<kmer_db_t>::read_binary(std::istream& is, nseq_t nseq)
+{
+    seq_ids_.reserve(nseq);
+    seq_lens_.reserve(nseq);
+
+    std::string seq_id;
+    npos_t seq_len = 0;
+    std::string seq_opt_hdr;
+
+    while (nseq-- && is)
+    {
+        is >> seq_id >> seq_len;
+        getline(is, seq_opt_hdr); // consume newline, seq headers ignored for now
+
+        seq_ids_.push_back(seq_id);
+        seq_lens_.push_back(seq_len);
+    }
+
+    if (!is)
+        raise_error("failed to read sequence section from binary template file");
+
+    if (seq_ids_.size() != 0)
+        kmer_db_.read(is);
+
+    return is;
+}
+
+template<typename kmer_db_t>
+std::istream&
+template_db_impl<kmer_db_t>::read_fasta(std::istream& is, int max_vars)
+{
+    sequence_reader reader(is, sequence_reader::fasta);
+    kmerator k(kmer_db_.ksize(), max_vars);
+
+    sequence seq;
+    nseq_t seq_cnt = 0;
+    int ksize = kmer_db_.ksize();
+
+    while (reader.next(seq))
+    {
+        seq_ids_.push_back(seq.id);
+        seq_lens_.push_back(seq.data.length() - ksize + 1);
+
+        k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
+
+        kloc_t loc = seq_cnt++;
+        loc = (loc << 32) - 1;
+
+        do {
+            if (!k.variant())
+                ++loc;
+            kmer_db_.add_kloc(k.knum(), loc);
+        } while (k.inc());
+    }
+
+    return is;
 }
 
 

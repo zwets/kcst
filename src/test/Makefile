@@ -31,12 +31,12 @@ USER_HEADERS = $(USER_DIR)/templatedb.h $(USER_DIR)/kmerdb.h \
 	$(USER_DIR)/seqreader.h \
 	$(USER_DIR)/kmerise.h $(USER_DIR)/utils.h
 
-USER_OBJS = templatedb.o kmerdb.o vectordb.o mapdb.o \
+USER_OBJS = templatedb.o vectordb.o mapdb.o \
 	seqreader.o \
 	kmeriser.o kmerator.o baserator.o \
 	utils.o
 
-TEST_OBJS = templatedb-test.o kmerdb-test.o vectordb-test.o mapdb-test.o \
+TEST_OBJS = templatedb-test.o vectordb-test.o mapdb-test.o \
 	seqreader-test.o \
 	kmeriser-test.o kmerator-test.o baserator-test.o
 

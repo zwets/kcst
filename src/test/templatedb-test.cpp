@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 #include <fstream>
+#include <memory>
 #include "templatedb.h"
 
 using namespace khc;
@@ -43,39 +44,31 @@ static bool write_db(const template_db& db)
     return f.is_open() && db.write(f);
 }
 
-TEST(templatedb_test, write_empty) {
-
-    template_db db(5, 4, 16);
-    std::ofstream f(scratch_fname);
-
-    ASSERT_TRUE(f.is_open());
-    EXPECT_TRUE(db.write(f));
-}
-
 TEST(templatedb_test, read_empty) {
 
     std::ifstream fi(infile_empty);
     ASSERT_TRUE(fi.is_open());
 
-    template_db dbi(5, 4, 16);
-    dbi.read(fi);
+    std::unique_ptr<template_db> dbi = template_db::read(fi, 0, 5, 64);
     fi.close();
 }
 
-TEST(templatedb_test, write_read) {
+TEST(templatedb_test, write_empty) {
 
-    template_db dbo(5, 4, 16);
-    fill_db(dbo);
-    write_db(dbo);
-
-    std::ifstream fi(scratch_fname);
+    std::ifstream fi(infile_empty);
     ASSERT_TRUE(fi.is_open());
+    std::unique_ptr<template_db> db = template_db::read(fi, 0, 5, 64);
 
-    template_db dbi(5, 4, 16);
-    dbi.read(fi);
-    fi.close();
+    std::ofstream f(scratch_fname);
+    ASSERT_TRUE(f.is_open());
+    EXPECT_TRUE(db->write(f));
+}
 
-    // TODO: test same was read back
+TEST(templatedb_test, read_fasta) {
+
+    std::ifstream fi(infile_fasta);
+    ASSERT_TRUE(fi.is_open());
+    std::unique_ptr<template_db> db = template_db::read(fi, 0, 5, 64);
 }
 
 

@@ -22,10 +22,14 @@
 
 namespace khc {
 
-
 extern void raise_error(const char* t, ...);
 
-/* Alternative using the C++ approach, without varargs, see:
+extern void set_verbose(bool verbose);
+extern void verbose_emit(const char* t, ...);
+
+extern unsigned long long get_system_memory();
+
+/* Alternative for varargs using the C++ approach, see:
  * https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#-es34-dont-define-a-c-style-variadic-function
  *
 void raise_error()
