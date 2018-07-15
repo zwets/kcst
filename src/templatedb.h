@@ -69,7 +69,7 @@ typedef std::vector<seq_hits> query_result;
 // template_db from either a FASTA file or an optimised binary file that it
 // has previously written.
 
-// Its main interface function is query, which takes a filename or "-" for
+// Its main interface function is query(), which takes a filename or "-" for
 // stdin, and returns the list of sequences hit by the kmers in the file.
 
 class template_db

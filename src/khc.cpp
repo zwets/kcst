@@ -30,14 +30,11 @@
 
 using namespace khc;
 
-static const int MAX_VARIANTS_PER_KMER = 64;
-static const int DEFAULT_KSIZE = 13;
-static const int DEFAULT_MEM = 16; // GB
-static const double DEFAULT_COV = 90.0;
 static const int MAX_KSIZE = 31;
+static const double DEFAULT_COV = 90.0;
 
 static const std::string USAGE("\n"
-"Usage: khc [-k KSIZE] [-c COV] [-m MEM] [-w FILE] [-v] SUBJECTS [QUERY]\n"
+"Usage: khc [-k KSIZE] [-c COV] [-m MEM] [-d VARS] [-w FILE] [-v] SUBJECTS [QUERY]\n"
 "\n"
 "  Count for each sequence in SUBJECTS the number of kmers from QUERY that\n"
 "  hit it.  Report every sequence with at least COV percent base coverage.\n"
@@ -51,10 +48,13 @@ int main (int, char *argv[])
     std::string tpl_fname;
     std::string qry_fname;
     std::string out_fname;
-    int ksize = DEFAULT_KSIZE;
-    int max_mem = DEFAULT_MEM;
+
+    int ksize = 0;
+    int max_mem = 0;
+    int max_vars = 0;
     double min_cov = DEFAULT_COV;
-//    int verbose = false;
+
+    set_progname("khc");
 
         // PARSE ARGUMENTS
 
@@ -63,7 +63,7 @@ int main (int, char *argv[])
         {
             if (!std::strcmp("-v", *argv))
             {
-//                verbose = true;
+                set_verbose(true);
             }
             else if (!std::strcmp("-w", *argv) && *++argv)
             {
@@ -82,8 +82,14 @@ int main (int, char *argv[])
             else if (!std::strcmp("-m", *argv) && *++argv)
             {
                 max_mem = std::atoi(*argv);
-                if (ksize < 1)
+                if (max_mem < 1)
                     raise_error("invalid MEM: %s", *argv);
+            }
+            else if (!std::strcmp("-d", *argv) && *++argv)
+            {
+                max_vars = std::atoi(*argv);
+                if (max_vars < 0)
+                    raise_error("invalid VARS: %s", *argv);
             }
             else if (**argv == '-') 
             {
@@ -93,12 +99,12 @@ int main (int, char *argv[])
             else if (tpl_fname.empty())
             {
                 tpl_fname = *argv;
-                std::cerr << "database file: " << tpl_fname << std::endl;
+                verbose_emit("database file: %s", tpl_fname.c_str());
             }
             else if (qry_fname.empty())
             {
                 qry_fname = *argv;
-                std::cerr << "query file: " << qry_fname << std::endl;
+                verbose_emit("query file: %s", qry_fname.c_str());
             }
             else
             {
@@ -119,28 +125,24 @@ int main (int, char *argv[])
             // READ TEMPLATE DB
 
         std::ifstream tpl_file(tpl_fname);
-        if (!tpl_file)
-	{ 
-            std::cerr << "failed to open template file: " << tpl_fname << std::endl;
-            return 1;
-        }
 
-        std::unique_ptr<template_db> tpldb = template_db::read(tpl_file, max_mem, ksize, MAX_VARIANTS_PER_KMER);
+        if (!tpl_file)
+            raise_error("failed to open template file: %s", tpl_fname.c_str());
+
+        std::unique_ptr<template_db> tpldb = template_db::read(tpl_file, max_mem, ksize, max_vars);
 
         tpl_file.close();
 
             // WRITE TEMPLATE DB
 
         if (!out_fname.empty() && !tpldb->write(out_fname))
-            std::cerr << "failed to write template binary file: " << out_fname << std::endl;
+            raise_error("failed to write binary template file: %s" , out_fname.c_str());
 
             // PERFORM QUERY
 
         query_result res = tpldb->query(qry_fname, min_cov);
 
             // SHOW RESULT
-
-        std::cerr << "RESULTS" << std::endl;
 
         for (size_t i = 0; i != res.size(); ++i)
             std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;

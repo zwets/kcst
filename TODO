@@ -4,4 +4,5 @@ TODOs
 - When using pre-made binary database, make -k optional
 - Add the kcst wrapper doing the MLST
 - Add other wrappers?
+- Use prefix sampling (Ole)
 

@@ -27,7 +27,7 @@
 namespace khc {
 
 static bool verbose = false;
-static const char* progname = "[verbose]";
+static const char* progname = "ksct";
 
 void
 set_progname(const char *p)
@@ -51,7 +51,7 @@ raise_error(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
 
-    std::cerr << progname << ":" << buf << std::endl;
+    std::cerr << progname << ": error: " << buf << std::endl;
     std::exit(1);
 }
 
@@ -67,7 +67,7 @@ verbose_emit(const char *fmt, ...)
         vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end(ap);
 
-        std::cerr << ":" << buf << std::endl;
+        std::cerr << ": " << buf << std::endl;
     }
 }
 

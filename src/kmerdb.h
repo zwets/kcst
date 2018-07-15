@@ -34,7 +34,7 @@ namespace khc {
 
 // Kmers are encoded (by kmeriser, q.v.) in kmer_t, a 64-bit integral. Kmer
 // locations are encoded (by template_db) in kloc_t, a 64-bit integral composed
-// from sequence number and position of the sequence.
+// from sequence number and position on the sequence.
 
 // kmer_t - the number type used to store an encoded kmer
 // 
