@@ -28,42 +28,17 @@ static const knum_t G = 2;
 static const knum_t T = 3;
 static const knum_t X = -1;
 
-static const knum_t BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T };
-
-
-kmeriser::kmeriser(int ksize)
-    : pcur_(0), pend_(0), ksize_(ksize)
-{
-    if (ksize < 1 || ksize > max_ksize || !(ksize & 1))
-        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, max_ksize);
-}
-
-
-bool
-kmeriser::set(const char *begin, const char *end)
-{
-    pcur_ = begin;
-    pend_ = end - ksize_ + 1;
-
-    return pcur_ < pend_;
-}
-
-
-bool
-kmeriser::inc()
-{
-    return pcur_ < pend_ && ++pcur_ < pend_;
-}
+static const knum_t BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T, X, X, X, X, X, X };
+static const int DEGEN_BASES[]    = { 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0 };
 
 
 static knum_t
 base_value(char c)
 {
-    int o = c - 'a';
+    int o = c - 'A';
 
-    if (o < 0 || o > 19)
-    {
-        o = c - 'A';            // try between 'A' and 'T'
+    if (o < 0 || o > 19) {      // outside 'A'..'T'
+        o = c - 'a';            // try 'a'..'t' smallcaps
         if (o < 0 || o > 19)
             raise_error("invalid base: %c; must be one of [acgtACGT]", c);
     }
@@ -77,13 +52,83 @@ base_value(char c)
 }
 
 
+static bool
+is_degen_base(char c)
+{
+    int o = c - 'A';
+
+    if (o < 0 || o > 25) {      // outside 'A'..'Z'
+        o = c - 'a';            // try 'a'..'z' smallcaps
+        if (o < 0 || o > 25)    // outside either range then
+            return false;       // by definition not a degenerate base 
+    }
+
+    return DEGEN_BASES[o];
+}
+
+
+kmeriser::kmeriser(int ksize, bool skip_degens)
+    : pcur_(0), pend_(0), ksize_(ksize), skip_degens_(skip_degens)
+{
+    if (ksize < 1 || ksize > max_ksize || !(ksize & 1))
+        raise_error("invalid kmer size: %d; must be an odd number in range [1,%d]", ksize, max_ksize);
+}
+
+
+void
+kmeriser::set(const char *begin, const char *end)
+{
+    pcur_ = begin - 1;          // one before start of first kmer
+    pend_ = end - ksize_ + 1;   // one beyond start of last kmer
+
+    // if we skip_degens, then bump pcur to one before first kmer not containing a degen base
+    // note: ignore invalid bases as these will error out in any case in knum()
+
+    if (skip_degens_)
+    {
+        while (++pcur_ < pend_)
+        {
+            const char *p = pcur_ + ksize_;
+
+            while (p-- != pcur_) 
+                if (is_degen_base(*p))
+                {
+                    pcur_ = p;
+                    break;
+                }
+        
+            // post condition: p == pcur and is degen, or p < pcur and pcur starts good kmer
+
+            if (p != pcur_)
+                break;
+        }
+
+        // post condition: pcur on start of non-degen kmer, or pcur on or beyond pend
+
+        --pcur_;  // first next() will advance it (possibly onto pend and yield false)
+    }
+}
+
+
+bool
+kmeriser::next()
+{
+    if (skip_degens_)
+    {
+        while (++pcur_ < pend_ && is_degen_base(pcur_[ksize_-1]))
+            pcur_ += ksize_ - 1;
+        return pcur_ < pend_;
+    }
+    else
+        return ++pcur_ < pend_;
+}
+
+
+
 knum_t
 kmeriser::knum() const
 {
     knum_t res = 0;
-
-    if (!(pcur_ < pend_))
-        raise_error("kmeriser read attempted past right bound of sequence");
 
     const char *pmid = pcur_ + (ksize_ / 2);
     const char *pstop = pcur_ + ksize_;
@@ -122,7 +167,8 @@ kmeriser::knums()
 {
     std::vector<knum_t> res;
 
-    if (pcur_ < pend_) do res.push_back(knum()); while (inc());
+    while (next()) 
+        res.push_back(knum());
 
     return res;
 }

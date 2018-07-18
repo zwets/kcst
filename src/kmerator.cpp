@@ -33,58 +33,55 @@ kmerator::kmerator(int ksize, int max_variants)
 }
 
 
-bool
+void
 kmerator::set(const char *begin, const char *end)
 {
     pcur_ = begin;
     pend_ = end - ksize_ + 1;
-    variant_ = 0;
-    
+    variant_ = -1;
+
     if (pcur_ < pend_)
+    {
         for (int i = 0; i < ksize_; ++i)
             baserators_[i].set(pcur_[i]);
 
-    return pcur_ < pend_;
+        baserators_[ksize_-1].dec();      // set rightmost to one-before-start
+    }
 }
 
 
 bool
-kmerator::inc()
+kmerator::next()
 {
-    bool done = false;
+    bool more = false;
 
-    if (pcur_ >= pend_) // bail early if already walked off the end
-        return false;
-
-    // try bumping the baserators to the next variant at pcur_
-
-    std::vector<baserator>::iterator p = baserators_.end();
-    while (!done && p-- != baserators_.begin())
-        done = p->inc();
-
-    if (done) // done -> bumped, another variant is present for current kmer
+    if (pcur_ < pend_)
     {
-        if (++variant_ == max_variants_) // count variant and check limit
-        {
-            char buf[ksize_+1];
-            for (int i = 0; i < ksize_; ++i)
-                buf[i] = pcur_[i];
-            buf[ksize_] = '\0';
+        // try bumping the baserators to the next variant at pcur_
 
-            raise_error("kmer generates more than %d variants: %s", 
-                    max_variants_, buf);
+        std::vector<baserator>::iterator p = baserators_.end();
+        while (!more && p-- != baserators_.begin())
+            more = p->inc();
+
+        if (more) // bumped, another variant is present for current kmer
+        {
+            if (++variant_ == max_variants_ && max_variants_ != 0)
+            {
+                std::string kmer(pcur_, ksize_);
+                raise_error("kmer generates more than %d variants: %s", 
+                        max_variants_, kmer.c_str());
+            }
+        }
+        else if ((more = ++pcur_ < pend_)) // no more variants, attempt move on
+        {
+            variant_ = 0;
+
+            for (int i = 0; i < ksize_; ++i)
+                baserators_[i].set(pcur_[i]);
         }
     }
-    else // not done -> the baserators have all overflown, we must move on
-    {
-        variant_ = 0;
-        
-        if ((done = ++pcur_ < pend_))   // shift one position right or fail
-            for (int i = 0; i < ksize_; ++i)  // reload the baserators
-                baserators_[i].set(pcur_[i]);
-    }
 
-    return done;
+    return more;
 }
 
 
@@ -92,9 +89,6 @@ knum_t
 kmerator::knum() const
 {
     knum_t res = 0;
-
-    if (!(pcur_ < pend_))
-        raise_error("kmerator read attempted past right bound of sequence");
 
     std::vector<baserator>::const_iterator pmid = baserators_.begin() + (ksize_ / 2);
 
@@ -132,7 +126,8 @@ kmerator::knums()
 {
     std::vector<knum_t> res;
 
-    if (pcur_ < pend_) do res.push_back(knum()); while (inc());
+    while (next()) 
+        res.push_back(knum());
 
     return res;
 }

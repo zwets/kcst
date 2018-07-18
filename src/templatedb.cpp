@@ -29,10 +29,11 @@ static const std::string MAGIC("~khc~");
 static const std::string NSEQ_LABEL("nseq");
 static const std::string NBASES_LABEL("nbases");
 static const std::string KSIZE_LABEL("ksize");
+static const std::string MAXVARS_LABEL("maxvars");
 
 
 std::unique_ptr<template_db>
-template_db::create_db(int ksize, int max_gb)
+template_db::create_db(int ksize, int max_vars, int max_gb)
 {
     template_db *ret;
 
@@ -65,7 +66,7 @@ template_db::create_db(int ksize, int max_gb)
                 static_cast<unsigned long>(vec_mb >> 10),
                 static_cast<unsigned long>(max_mb >> 10));
 
-        ret = new template_db_impl<map_kmer_db>(ksize);
+        ret = new template_db_impl<map_kmer_db>(ksize, max_vars);
     }
     else
     {
@@ -73,7 +74,7 @@ template_db::create_db(int ksize, int max_gb)
                 static_cast<unsigned long>(vec_mb >> 10),
                 static_cast<unsigned long>(max_mb >> 10));
 
-        ret = new template_db_impl<vector_kmer_db>(ksize);
+        ret = new template_db_impl<vector_kmer_db>(ksize, max_vars);
     }
  
     return std::unique_ptr<template_db>(ret);
@@ -88,26 +89,28 @@ template_db::read(std::istream& is, int max_gb, int ksize, int max_vars)
     {
         verbose_emit("reading binary template database");
 
-        std::string magic, nseq_label, nbases_label, ksize_label, dummy;
+        std::string magic, nseq_label, nbases_label, ksize_label, maxvars_label, dummy;
         nseq_t nseq;
         kloc_t nbases;
         int db_ksize;
+        int db_max_vars;
 
-        is >> magic >> nseq_label >> nseq >> nbases_label >> nbases >> ksize_label >> db_ksize;
+        is >> magic >> nseq_label >> nseq >> nbases_label >> nbases >> ksize_label >> db_ksize >> maxvars_label >> db_max_vars;
         getline(is, dummy); // consume newline
 
-        if (magic != MAGIC || nseq_label != NSEQ_LABEL || nbases_label != nbases_label || ksize_label != KSIZE_LABEL)
-            raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+ %s [0-9]+'",
-                    MAGIC.c_str(), NSEQ_LABEL.c_str(), NBASES_LABEL.c_str(), KSIZE_LABEL.c_str());
+        if (magic != MAGIC || nseq_label != NSEQ_LABEL || nbases_label != NBASES_LABEL || ksize_label != KSIZE_LABEL || maxvars_label != MAXVARS_LABEL)
+            raise_error("not a valid binary template file: expected header '%s %s [0-9]+ %s [0-9]+ %s [0-9]+ %s [0-9]+'",
+                    MAGIC.c_str(), NSEQ_LABEL.c_str(), NBASES_LABEL.c_str(), KSIZE_LABEL.c_str(), MAXVARS_LABEL.c_str());
 
         if (ksize != 0 && ksize != db_ksize)
             raise_error("specified ksize %d mismatches binary template file ksize: %d",
                     ksize, db_ksize);
 
-        if (max_vars != 0)
-            raise_error("max variants cannot be specified when template database is binary");
+        if (max_vars != 0 && max_vars != db_max_vars)
+            raise_error("specified max variants %d mismatches value in binary template file: %d",
+                    max_vars, db_max_vars);
 
-        ret = create_db(db_ksize, max_gb);
+        ret = create_db(db_ksize, db_max_vars, max_gb);
         ret->read_binary(is, nseq);
     }
     else
@@ -120,8 +123,8 @@ template_db::read(std::istream& is, int max_gb, int ksize, int max_vars)
         if (max_vars == 0)
             raise_error("max variants must be specified");
 
-        ret = create_db(ksize, max_gb);
-        ret->read_fasta(is, max_vars);
+        ret = create_db(ksize, max_vars, max_gb);
+        ret->read_fasta(is);
     }
 
     return ret;
@@ -134,12 +137,15 @@ template_db::write(std::ostream& os) const
     static const char W = ' ';
 
     kloc_t nbases = 0;
+    for (auto n : seq_lens_)
+        nbases += n;
 
     for (const auto& len : seq_lens_) nbases += len;
     os << MAGIC << W << 
         NSEQ_LABEL << W << seq_ids_.size() << W << 
         NBASES_LABEL << W << nbases << W << 
-        KSIZE_LABEL << W << ksize() << std::endl;
+        KSIZE_LABEL << W << ksize() << W <<
+        MAXVARS_LABEL << W << max_vars() << std::endl;
 
     for (nseq_t i = 0; i != seq_ids_.size(); ++i)
         os << seq_ids_[i] << W << seq_lens_[i] /* << seq_hdrs_[i] */ << std::endl;
@@ -165,7 +171,7 @@ template_db::write(const std::string& filename) const
 
 template<typename kmer_db_t>
 query_result
-template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_pct) const
+template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_pct, bool skip_degens) const
 {
     std::ifstream qry_file;
     std::istream* is = &std::cin;
@@ -191,14 +197,15 @@ template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_p
     // collect the targets hits by the query
 
     sequence_reader qry_reader(*is);
-    kmeriser k(kmer_db_.ksize());
+    kmeriser k(kmer_db_.ksize(), skip_degens);
     sequence seq;
 
     while (qry_reader.next(seq))
     {
         k.set(seq.data.c_str(), seq.data.c_str() + seq.data.length());
 
-        do
+        while (k.next())
+        {
             for (const kloc_t& loc : kmer_db_.get_klocs(k.knum()))
             {
                 nseq_t sid = loc >> 32;
@@ -206,7 +213,7 @@ template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_p
 
                 targets[sid][pos] = '\1';
             }
-        while (k.inc());
+        }
     }
 
     if (is != &std::cin)
@@ -262,10 +269,10 @@ template_db_impl<kmer_db_t>::read_binary(std::istream& is, nseq_t nseq)
 
 template<typename kmer_db_t>
 std::istream&
-template_db_impl<kmer_db_t>::read_fasta(std::istream& is, int max_vars)
+template_db_impl<kmer_db_t>::read_fasta(std::istream& is)
 {
     sequence_reader reader(is, sequence_reader::fasta);
-    kmerator k(kmer_db_.ksize(), max_vars);
+    kmerator k(kmer_db_.ksize(), max_vars_);
 
     sequence seq;
     nseq_t seq_cnt = 0;
@@ -281,11 +288,12 @@ template_db_impl<kmer_db_t>::read_fasta(std::istream& is, int max_vars)
         kloc_t loc = seq_cnt++;
         loc = (loc << 32) - 1;
 
-        do {
+        while (k.next())
+        {
             if (!k.variant())
                 ++loc;
             kmer_db_.add_kloc(k.knum(), loc);
-        } while (k.inc());
+        }
     }
 
     return is;

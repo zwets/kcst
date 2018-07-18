@@ -78,18 +78,19 @@ class template_db
         std::vector<std::string> seq_ids_;
         std::vector<kcnt_t> seq_lens_;
 
-        static std::unique_ptr<template_db> create_db(int ksize, int max_gb = 0);
+        static std::unique_ptr<template_db> create_db(int ksize, int max_vars, int max_gb = 0);
 
         virtual int ksize() const = 0;
+        virtual int max_vars() const = 0;
         virtual std::istream& read_binary(std::istream&, nseq_t nseq) = 0;
-        virtual std::istream& read_fasta(std::istream&, int max_vars) = 0;
+        virtual std::istream& read_fasta(std::istream&) = 0;
         virtual void write_kmer_db(std::ostream&) const = 0;
 
     public:
         static std::unique_ptr<template_db> read(std::istream&, int max_gb = 0, int ksize = 0, int max_vars = 0);
 
     public:
-        virtual query_result query(const std::string&, double min_cov_pct = 1.0) const = 0;
+        virtual query_result query(const std::string&, double min_cov_pct = 1.0, bool skip_degens = false) const = 0;
 
         std::ostream& write(std::ostream&) const;
         bool write(const std::string&) const;
@@ -100,16 +101,18 @@ class template_db_impl : public template_db
 {
     private:
         kmer_db_t kmer_db_;
+        int max_vars_;
 
     protected:
         virtual int ksize() const { return kmer_db_.ksize(); }
+        virtual int max_vars() const { return max_vars_; }
         virtual std::istream& read_binary(std::istream&, nseq_t nseq);
-        virtual std::istream& read_fasta(std::istream&, int max_vars);
+        virtual std::istream& read_fasta(std::istream&);
         virtual void write_kmer_db(std::ostream& os) const { kmer_db_.write(os); }
 
     public:
-        template_db_impl(int ksize) : kmer_db_(ksize) { }
-        virtual query_result query(const std::string&, double min_cov_pct = 1.0) const;
+        template_db_impl(int ksize, int max_vars) : kmer_db_(ksize), max_vars_(max_vars) { }
+        virtual query_result query(const std::string&, double min_cov_pct = 1.0, bool skip_degens = false) const;
 };
 
 

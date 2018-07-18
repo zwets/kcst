@@ -74,11 +74,11 @@ static const knum_t LETTER_BASES[26][4] = {
 void
 baserator::set(char c)
 {
-    int o = c - 'a';
+    int o = c - 'A';
 
     if (o < 0 || o > 25)
     {
-        o = c - 'A';
+        o = c - 'a';
 
         if (o < 0 || o > 25)
             raise_error("invalid sequence character: %c", c);
@@ -92,17 +92,19 @@ baserator::set(char c)
         raise_error("invalid base: %c", c);
 }
 
+
 // Bump the baserator to next value and return true, or to 0 and return false
 //
 bool
 baserator::inc()
 {
-    bool done = ++pos_ < end_;
-
-    if (!done)
+    if (++pos_ == end_)
+    {
         pos_ = 0;
-
-    return done;
+        return false;
+    }
+    else
+        return true;
 }
 
 

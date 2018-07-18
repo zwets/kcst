@@ -33,21 +33,21 @@
 //
 // The 'knum_t' representation of a kmer is a number that encodes a sequence
 // of bases by using 2 bits for every base (a=b00, c=b01, g=b10, t=b11), 
-// *except* the middle base, which is encoded as a single bit: a=b0, c=b1.
-// There is always a middle base, because ksize must be odd.
+// except the middle base, which is encoded as a single bit: a=b0, c=b1.
+// There is always a middle base, because we enforce ksize to be odd.
 //
 // Why the single bit for the middle base, and how do we encode g or t?  The
 // trick is that if the middle base is g or t, then we encode the reverse
-// complement of the sequence.  This way we have a 'canonical encoding' for
-// every sequence, and also need only half the storage.
+// complement of the sequence.  This way we have a 'canonical encoding', so
+// need to match one way only, while also needing half the storage.
 
 
 namespace khc {
 
 // knum_t - the number type used to store an encoded kmer.
 //
-// Counterpart of kmer_t in kmerdb.h, but named differently to keep decoupled,
-// and compiler will warn when converting between different bit sized typed.
+// Counterpart of kmer_t in kmerdb.h, but named differently to keep decoupled.
+// Relying on compiler to warn when converting between different sized types.
 //
 typedef std::uint64_t knum_t;
 
@@ -72,6 +72,7 @@ class baserator
     public:
         void set(char c);
         bool inc();
+        void dec() { --pos_; }
         int len() const { return end_; }
         knum_t knum() const { return vals_[pos_]; }
 };
@@ -79,16 +80,17 @@ class baserator
 
 // Generator for all knums for a sequence of characters.
 //
-// Iterates a ksize kmer window over sequence [begin,end).  At every position,
-// get() returns the knum representation at the current location, inc() advances
-// to the next or returns false.
+// Iterates a ksize window over sequence [begin,end).  Method next() advances
+// or returns false, knum() returns the knum at the current location, knums()
+// all knums in the range.
 //
-// If the current window has extended characters (aka "degenerate bases") that
-// matchs multiple bases, then inc() produces each variant in turn, before
-// advancing the window to the next position in the sequence.
-// Note how this blows up quickly: a 15-mer 'NN...NN' generates a billion
-// kmers (and will match the entire kmer space).  To protect against this, when
-// more than max_variants (default 4) are generated, an exception is thrown.
+// If the current window has extended characters (aka "degenerate bases"), then
+// next() produces each variant in turn, before advancing the window to the next
+// position in the sequence.
+//
+// Note how this blows up quickly: a 15-mer 'NN...NN' generates a billion kmers
+// (and matches the entire kmer space).  To protect against this, set max_vars.
+// A kmer generating more than max_vars will then raise an error.
 //
 class kmerator
 {
@@ -103,11 +105,13 @@ class kmerator
         int variant_;
         int max_variants_;
 
-    public:
-        kmerator(int ksize, int max_variants = 4);
+        void init_baserators();
 
-        bool set(const char *begin, const char *end);
-        bool inc();
+    public:
+        kmerator(int ksize, int max_variants = 0);
+
+        void set(const char *begin, const char *end);
+        bool next();
         int variant() const { return variant_; }
         knum_t knum() const;
         std::vector<knum_t> knums();
@@ -116,8 +120,11 @@ class kmerator
 
 // Generator for all knums for a sequence of bases.
 //
-// Identical to kmerator(begin, end, ksize, 1), but faster, as this generator
-// handles only sequences without variants, i.e. consisting of proper bases.
+// Identical to kmerator(begin, end, 1), but faster, as this generator does
+// not handle sequences with variants, i.e. accepts only the four proper bases.
+//
+// When constructor argument skip_degens is true, the class will silently skip
+// kmers with degenerate bases.  By default (false) it raises an error.
 //
 class kmeriser
 {
@@ -128,12 +135,13 @@ class kmeriser
         const char* pcur_;
         const char* pend_;
         int ksize_;
+        bool skip_degens_;
 
     public:
-        kmeriser(int ksize);
+        kmeriser(int ksize, bool skip_degens = false);
 
-        bool set(const char *begin, const char *end);
-        bool inc();
+        void set(const char *begin, const char *end);
+        bool next();
         knum_t knum() const;
         std::vector<knum_t> knums();
 };

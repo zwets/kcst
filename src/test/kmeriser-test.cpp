@@ -52,16 +52,18 @@ TEST(kmeriser_test, ksize_1) {
     kmeriser r(1);
     char seq[] = "a";
     r.set(seq, seq+strlen(seq));
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(A_VAL,r.knum());
-    EXPECT_FALSE(r.inc());
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, reverse_1) {
     kmeriser r(1);
     char seq[] = "t";
     r.set(seq, seq+strlen(seq));
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(A_VAL,r.knum());    // Note t read on rev strand, so A_VAL
-    EXPECT_FALSE(r.inc());
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, reverse_long) {
@@ -71,37 +73,33 @@ TEST(kmeriser_test, reverse_long) {
     r1.set(seq, seq+strlen(seq));
     r2.set(rev, rev+strlen(rev));
     std::list<knum_t> v1, v2;
-    do {
+    while (r1.next() && r2.next()) {
         v1.push_back(r1.knum());
         v2.push_front(r2.knum());
-    } while (r1.inc() && r2.inc());
+    }
     EXPECT_EQ(v1, v2);
 }
 
 TEST(kmeriser_test, empty_seq) {
     kmeriser r(1);
     char seq[] = "";
-    EXPECT_FALSE(r.set(seq, seq+strlen(seq)));
-    //EXPECT_THROW(r.knum(),std::runtime_error);
-    EXPECT_DEATH(r.knum(), ".*");
+    r.set(seq, seq+strlen(seq));
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, set_past_end) {
     kmeriser r(3);
     char seq[] = "acg";
-    EXPECT_FALSE(r.set(seq+1, seq+3));
-    EXPECT_FALSE(r.inc());
-    //EXPECT_THROW(r.knum(), std::runtime_error);
-    EXPECT_DEATH(r.knum(), ".*");
+    r.set(seq+1, seq+3);
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, read_past_end) {
     kmeriser r(3);
     char seq[] = "acg";
-    EXPECT_TRUE(r.set(seq, seq+3));
-    EXPECT_FALSE(r.inc());
-    //EXPECT_THROW(r.knum(), std::runtime_error);
-    EXPECT_DEATH(r.knum(), ".*");
+    r.set(seq, seq+3);
+    EXPECT_TRUE(r.next());
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, knums_expires) {
@@ -109,46 +107,92 @@ TEST(kmeriser_test, knums_expires) {
     char seq[] = "cgtatatgca";
     r.set(seq,seq+strlen(seq));
     r.knums();
-    EXPECT_FALSE(r.inc());
+    EXPECT_FALSE(r.next());
+}
+
+TEST(kmeriser_test, next_steals_knums) {
+    kmeriser r(3);
+    char seq[] = "cgtatatgca";
+    r.set(seq,seq+strlen(seq));
+    EXPECT_TRUE(r.next());
+    EXPECT_EQ(7, r.knums().size());
 }
 
 TEST(kmeriser_test, ksize_3) {
     kmeriser r(3);
     char seq[] = "acgtca";
     r.set(seq, seq+strlen(seq));
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(6,r.knum()); // acg -> 00110
-    EXPECT_TRUE(r.inc());
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(6,r.knum()); // cgt -> acg -> 00110
-    EXPECT_TRUE(r.inc());
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(17,r.knum()); // gtc -> gac -> 10001
-    EXPECT_TRUE(r.inc());
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(28,r.knum()); // tca -> 11100
-    EXPECT_FALSE(r.inc());
+    EXPECT_FALSE(r.next());
 }
 
 TEST(kmeriser_test, move_halfway) {
     kmeriser r(3);
     char seq[] = "acgtca";
     r.set(seq, seq+6);
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(6,r.knum()); // acg -> 00110
-    EXPECT_TRUE(r.inc());
+    EXPECT_TRUE(r.next());
     r.set(seq+2, seq+6);
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(17,r.knum()); // gtc -> gac -> 10001
-    EXPECT_TRUE(r.inc());
+    EXPECT_TRUE(r.next());
     EXPECT_EQ(28,r.knum()); // tca -> 11100
-    EXPECT_FALSE(r.inc());
+    EXPECT_FALSE(r.next());
+}
+
+TEST(kmeriser_test, balk_degen) {
+    kmeriser r(3);
+    char seq[] = "cgn";
+    r.set(seq,seq+strlen(seq));
+    EXPECT_TRUE(r.next());
+    EXPECT_DEATH(r.knum(), ".*");
+}
+
+TEST(kmeriser_test, skip_n) {
+    kmeriser r(3, true);
+    char seq[] = "cgnaaa";
+    r.set(seq,seq+strlen(seq));
+    EXPECT_TRUE(r.next());
+    EXPECT_EQ(0,r.knum());
+    EXPECT_FALSE(r.next());
+}
+
+TEST(kmeriser_test, skip_all_degen) {
+    kmeriser r(3, true);
+    char seq[] = "cgbcgdcghcgvcgscgwcgrcgyaaanttt";
+    r.set(seq,seq+strlen(seq));
+    EXPECT_TRUE(r.next());
+    EXPECT_EQ(0,r.knum());
+    EXPECT_TRUE(r.next());
+    EXPECT_EQ(0,r.knum());
+    EXPECT_FALSE(r.next());
+}
+
+TEST(kmeriser_test, no_skip_bad) {
+    kmeriser r(3, true);
+    char seq[] = "cgxaaa";
+    r.set(seq,seq+strlen(seq));
+    EXPECT_TRUE(r.next());
+    EXPECT_DEATH(r.knum(), ".*");
 }
 
 TEST(kmeriser_test, same_as_ator) {
-    kmeriser ki(5); kmerator ka(5);
+    kmeriser ki(5); kmerator ka(5, 1);
     char seq[] = "acgtaaccggttagacatgtacgggattaatag";
-    ki.set(seq, seq+sizeof(seq)-1);
-    ka.set(seq, seq+sizeof(seq)-1);
-    do {
+    ki.set(seq, seq+strlen(seq));
+    ka.set(seq, seq+strlen(seq));
+    while (ki.next() && ka.next())
         EXPECT_EQ(ki.knum(), ka.knum());
-    } while (ki.inc() && ka.inc());
-    EXPECT_FALSE(ki.inc());
-    EXPECT_FALSE(ka.inc());
+    EXPECT_FALSE(ki.next());
+    EXPECT_FALSE(ka.next());
 }
 
 

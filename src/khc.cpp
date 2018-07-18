@@ -23,6 +23,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 
 #include "templatedb.h"
 #include "kmerdb.h"
@@ -31,17 +32,46 @@
 using namespace khc;
 
 static const int MAX_KSIZE = 31;
+static const int MAX_VARS = 1024;
 static const double DEFAULT_COV = 90.0;
 
-static const std::string USAGE("\n"
-"Usage: khc [-k KSIZE] [-c COV] [-m MEM] [-d VARS] [-w FILE] [-v] SUBJECTS [QUERY]\n"
+static const char USAGE[] = "\n"
+"Usage: khc [OPTIONS] SUBJECTS [QUERY]\n"
 "\n"
-"  Count for each sequence in SUBJECTS the number of kmers from QUERY that\n"
-"  hit it.  Report every sequence with at least COV percent base coverage.\n"
+"  Compute for each sequence in SUBJECTS its coverage by all kmers from QUERY.\n"
+"  Report all sequences with minimum COV pct base coverage in decreasing order\n"
+"  of coverage.\n"
 "\n"
-"  @DOCUMENTATION will follow once stabilised\n"
-"\n");
+"  File SUBJECTS must be either FASTA or an optimised binary file previously\n"
+"  produced by -w FILE.  Its sequences may contain degenerate bases (wildcards\n"
+"  such as R and N that match multiple bases), but a limit can be set on the\n"
+"  number of kmer variants these wildcards would allow (-j VARS).\n"
+"\n"
+"  File QUERY can be FASTA, FASTQ, or plain DNA characters.  If QUERY is omitted\n"
+"  or '-', it is read from stdin.  It is an error for QUERY to have degenerate\n"
+"  bases.  Use option -s to skip all kmers which contain a degenerate base.\n"
+"\n"
+"  OPTIONS\n"
+"   -k KSIZE  kmer size KSIZE; compulsory unless a binary SUBJECTS file is used\n"
+"             in which case it is the KSIZE used when producing the binary file\n"
+"   -c COV    minimum coverage percentage (default %.1f%%); coverage is measured\n"
+"             as percentage of bases covered by at least one kmer for query\n"
+"   -j VARS   allow at most VARS variants per kmer (default %d); note how\n"
+"             N produces 4 variants, B,D,H,V produce 3, K,M,S,W,R,Y produce 2.\n"
+"   -w FILE   write binary representation of SUBJECTS to FILE; FILE can then be\n"
+"             used in subsequent invocations, with considerable speed gains\n"
+"   -m MEM    constrain memory use to about MEM GB (default: all minus 2GB)\n"
+"   -s        skip kmers in QUERY that contain degenerate bases (including N)\n"
+"   -v        produce verbose output to stderr\n"
+"\n";
 
+
+void
+usage_exit()
+{
+    fprintf(stderr, USAGE, DEFAULT_COV, MAX_VARS);
+    std::exit(1);
+}
 
 int main (int, char *argv[]) 
 {
@@ -51,8 +81,9 @@ int main (int, char *argv[])
 
     int ksize = 0;
     int max_mem = 0;
-    int max_vars = 0;
+    int max_vars = MAX_VARS;
     double min_cov = DEFAULT_COV;
+    bool skip_degens = false;
 
     set_progname("khc");
 
@@ -61,63 +92,50 @@ int main (int, char *argv[])
     try {
         while (*++argv) 
         {
-            if (!std::strcmp("-v", *argv))
-            {
+            if (!std::strcmp("-v", *argv)) {
                 set_verbose(true);
             }
-            else if (!std::strcmp("-w", *argv) && *++argv)
-            {
+            else if (!std::strcmp("-s", *argv)) {
+                skip_degens = true;
+            }
+            else if (!std::strcmp("-w", *argv) && *++argv) {
                 out_fname = *argv;
             }
-            else if (!std::strcmp("-k", *argv) && *++argv)
-            {
+            else if (!std::strcmp("-k", *argv) && *++argv) {
                 ksize = std::atoi(*argv);
                 if (ksize < 1 || ksize > MAX_KSIZE) 
                     raise_error("invalid KSIZE: %s", *argv);
             }
-            else if (!std::strcmp("-c", *argv) && *++argv)
-            {
+            else if (!std::strcmp("-c", *argv) && *++argv) {
                 min_cov = std::atof(*argv);
             }
-            else if (!std::strcmp("-m", *argv) && *++argv)
-            {
+            else if (!std::strcmp("-m", *argv) && *++argv) {
                 max_mem = std::atoi(*argv);
                 if (max_mem < 1)
                     raise_error("invalid MEM: %s", *argv);
             }
-            else if (!std::strcmp("-d", *argv) && *++argv)
-            {
+            else if (!std::strcmp("-j", *argv) && *++argv) {
                 max_vars = std::atoi(*argv);
                 if (max_vars < 0)
                     raise_error("invalid VARS: %s", *argv);
             }
-            else if (**argv == '-') 
-            {
-                std::cerr << USAGE;
-                return 1;
+            else if (**argv == '-') {
+                usage_exit();
             }
-            else if (tpl_fname.empty())
-            {
+            else if (tpl_fname.empty()) {
                 tpl_fname = *argv;
                 verbose_emit("database file: %s", tpl_fname.c_str());
             }
-            else if (qry_fname.empty())
-            {
+            else if (qry_fname.empty()) {
                 qry_fname = *argv;
                 verbose_emit("query file: %s", qry_fname.c_str());
             }
             else
-            {
-                std::cerr << USAGE;
-                return 1;
-            }
+                usage_exit();
         }
 
         if (tpl_fname.empty())
-        {
-            std::cerr << USAGE;
-            return 1;
-        }
+            usage_exit();
 
         if (qry_fname.empty())
             qry_fname = "-";
@@ -140,7 +158,7 @@ int main (int, char *argv[])
 
             // PERFORM QUERY
 
-        query_result res = tpldb->query(qry_fname, min_cov);
+        query_result res = tpldb->query(qry_fname, min_cov, skip_degens);
 
             // SHOW RESULT
 

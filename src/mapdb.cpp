@@ -81,12 +81,11 @@ map_kmer_db::read(std::istream& is)
         is >> nlocs;
         is.get(); // space
 
-        kloc_t buf[nlocs];
-        is.read((char*)buf, nlocs*sizeof(kloc_t));
-
-        kloc_vecs_.push_back(std::vector<kloc_t>(buf, buf+nlocs));
-
+        std::vector<kloc_t> vec(nlocs);
+        is.read(reinterpret_cast<char*>(&vec[0]), nlocs * sizeof(kloc_t));
         is.get(); // newline
+
+        kloc_vecs_.push_back(vec);
     }
 
     char buf[sizeof(kmer_t) + sizeof(kcnt_t)];
