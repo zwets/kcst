@@ -2,20 +2,33 @@
 
 `kcst` predicts species and MLST from assembled sequences or raw reads.
 
-@@ UNDER CONSTRUCTION @@
-
 Home: <https://github.com/zwets/kcst>
 
 
 ## Introduction
 
 `kcst` predicts species and multi-locus sequence type from assembled or raw
-reads.  It does this by comparing the kmers in the query sequences with those
-found in the MLST profiles, picking the alleles best covered by the query.
+reads.  It does this by comparing the k-mers in the query sequences with those
+in the MLST profiles, picking the alleles best covered by the query.
 
 `kcst` does this 'all in one go'.  Instead of first predicting species in
-order to pick the applicable MLST schema, it matches the query across all MLST
-alleles.
+order to pick the applicable MLST scheme, it matches the query across all
+MLST schemes at once.
+
+By using a k-mer mapping approach, kcst is very fast.  It typically takes
+about a second to type one assembled genome.  The binary core of `kcst` is
+`khc` (k-mer hit count).  It can be used standalone to rapidly compute
+sequence similarity of a query with each of a set of subject sequences.
+
+ 
+> **Work in Progress**
+>
+> 1. The `kcst` wrapper which translates the allele hit scores produced by
+> `khc` to corresponding ST-number(s) is work in progress.
+>
+> 2. `khc` accepts reads files (it auto-detects whether input is FASTA, FASTQ,
+> or plain DNA), but until it can do input sampling, querying with reads is
+> obviously much slower than with assemblies.
 
 
 ## Quick Start
@@ -23,7 +36,7 @@ alleles.
 Assuming you are on a GNU/Linux system, and you have just cloned `kcst` from
 GitHub, here are the steps to run it:
 
-* Install requirements
+* Requirements
 
   To build `kcst` you need a C++ compiler and GNU `make`.  If your system
   doesn't already have these, figuring out how to install them should be easy.
@@ -33,40 +46,44 @@ GitHub, here are the steps to run it:
   system, or else can be easily installed.  On Ubuntu: `apt install gawk`.
   `awk` is used by the wrapper scripts that drive the binary (C++) core.
 
-* Build Sources
+* Build
 
       # Compile the sources
       cd src
       make
 
-      # Optionally compile and run unit tests
-      cd src/test
+      # Optionally run the unit tests
       make test
 
-* Run Core
-
-  The binary core of `kcst` is `khc` (for _k_mer _h_it _c_ount).  It can be
-  used standalone as a tool to rapidly compare two sequences for similarity:
+* Run `khc`
 
       cd src
-      ./khc 
+      ./khc --help
 
-* Run `kcst`
+      # Calculate coverage of each SUBJECT by kmers from QUERY
+      ./khc [OPTIONS] SUBJECTS [QUERY]
+
+* Run `kcst` **In Progress**
    
-    # Perform a kmer hit count of QUERY on SUBJECTS
-    ./khc [OPTIONS] SUBJECTS [QUERY]
+      # In progress: perform kmer counting ST
+      ./kcst [OPTIONS] SUBJECTS [QUERY]
 
-    # In progress: perform kmer counting ST
-    ./kcst [OPTIONS] SUBJECTS [QUERY]
-
-## Building
 
 ## Installing
 
 `kcst` has no dependencies or installation requirements.  Just run it.
 
+
+## Usage
+
+Use `kch --help` and `kcst --help` for concise instructions.
+
+_In Progress_
+
+
 ## Database
 
+_In Progress_
 
 
 ---

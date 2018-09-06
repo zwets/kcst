@@ -16,6 +16,9 @@ all: $(TARGET)
 clean:
 	rm -f $(OBJS) $(TARGET)
 
+test:
+	$(MAKE) -C unit-test test
+
 %.o: %.cpp $(HDRS)
 	$(CXX) $(CXXFLAGS) -c $<
 
