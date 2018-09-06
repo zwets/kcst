@@ -28,6 +28,7 @@ static const knum_t G = 2;
 static const knum_t T = 3;
 static const knum_t X = -1;
 
+//                                    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z
 static const knum_t BASE_VALUES[] = { A, X, C, X, X, X, G, X, X, X, X, X, X, X, X, X, X, X, X, T, X, X, X, X, X, X };
 static const int DEGEN_BASES[]    = { 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0 };
 

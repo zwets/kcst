@@ -15,6 +15,7 @@ all: $(TARGET)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
+	$(MAKE) -C unit-test clean
 
 test:
 	$(MAKE) -C unit-test test
