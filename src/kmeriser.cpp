@@ -81,12 +81,17 @@ kmeriser::set(const char *begin, const char *end)
 {
     pcur_ = begin - 1;          // one before start of first kmer
     pend_ = end - ksize_ + 1;   // one beyond start of last kmer
+}
 
-    // if we skip_degens, then bump pcur to one before first kmer not containing a degen base
-    // note: ignore invalid bases as these will error out in any case in knum()
 
+bool
+kmeriser::next()
+{
     if (skip_degens_)
     {
+        // if we skip_degens, then first bump pcur to one before first kmer not containing a degen
+        // note: ignore invalid bases as these will error out in any case in knum()
+
         while (++pcur_ < pend_)
         {
             const char *p = pcur_ + ksize_;
@@ -106,22 +111,10 @@ kmeriser::set(const char *begin, const char *end)
 
         // post condition: pcur on start of non-degen kmer, or pcur on or beyond pend
 
-        --pcur_;  // first next() will advance it (possibly onto pend and yield false)
+        --pcur_;  // post condition: pcur before good kmer, or before pend
     }
-}
 
-
-bool
-kmeriser::next()
-{
-    if (skip_degens_)
-    {
-        while (++pcur_ < pend_ && is_degen_base(pcur_[ksize_-1]))
-            pcur_ += ksize_ - 1;
-        return pcur_ < pend_;
-    }
-    else
-        return ++pcur_ < pend_;
+    return ++pcur_ < pend_;
 }
 
 
