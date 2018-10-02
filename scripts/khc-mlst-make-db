@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Top directory of the MLST database
+MLST_DB_DIR="/data/genomics/cgetools/databases/mlst"
+
+# Extension of the FASTA files
+FASTA_EXT=".fsa"
+
+# Extension of the MLST table files
+TABLE_EXT=".tsv"
+
+# Function to display a warning on standard error
+warn() {
+    echo "$(basename "$0"): warning: $*" >&2
+}
+
+find "$MLST_DB_DIR" -name "*$FASTA_EXT" | while read FSA; do
+
+    SCHEME="$(basename "$FSA" "$FASTA_EXT")"
+    TSV="${FSA%$FASTA_EXT}$TABLE_EXT"
+    [ -f "$TSV" ] || { 
+        warn "ignoring file, no '$TABLE' file for: $FSA"
+        continue
+    }
+
+    uf "$FSA" | awk -v S="$SCHEME" '
+        /^>/ {	match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
+	/^[^>]/'
+done
+
+# vim: sts=4:sw=4:et:si:ai
