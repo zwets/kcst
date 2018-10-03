@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  khc-mlst - Perform MLST using KHC
+#  make-kcst-db - Create MLST database for kcst
 #  Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Home: https://github.com/zwets/sast
+#  Home: https://github.com/zwets/kcst
 
 # Make sure sort and awk run predictably and fast
 export LC_ALL="C"
@@ -26,10 +26,9 @@ PROGNAME="$(basename "$0")"
 TAB="$(printf '\t')"
 
 # Defaults
-KHC_EXE="$(realpath "$(dirname "$0")/../src/khc")"
-DB_DIR="$(realpath "$(dirname "$0")/../data/cge-db")"
-PCT_COVER=98
-SAMPLE_NTH=1
+KHC_EXE="$(realpath "$(dirname "$0")/../bin/khc")"
+DB_DIR="$(realpath "$(dirname "$0")/cge-db")"
+K_SIZE=15
 
 # Function outputs $* on stderr
 err_msg() {
@@ -47,64 +46,17 @@ dbg_msg() {
     [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
-# Function either un(bxg)zips or cats "$1"
-maybe_decompress() {
-    case "$($FILE_EXE --brief --mime-type "$1")" in
-        application/gzip)    gzip -dc "$1" ;;
-        application/x-xz)    xz -dc "$1" ;;
-        application/x-bzip2) bzip2 -dc "$1" ;;
-        *) cat "$1" ;;
-    esac
-}
-
-# Function locates the TSV for scheme $1
-find_tsv() {
-    local TSV_FILE="$DB_DIR/$1/$1.tsv"
-    [ -f "$TSV_FILE" ] || err_exit "no TSV file for scheme: $1"
-    echo "$TSV_FILE"
-}
-    
-# Function to perform the KHC query; args $* are added to its end.
-# Output is scheme:gene:allele len hit cov
-khc_query() {
-    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" $*
-}
-
-# Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
-# Transforms into tab-separated 'scheme, gene, allele[*], cov', sorted on decreasing cov
-# then keeps only the highest cov line(s) for each gene
-top_hits() {
-    $GAWK_EXE -bO 'BEGIN { OFS="\t" }
-        { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
-    $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
-    $GAWK_EXE -bOF "$TAB" 'BEGIN { OFS=FS }
-        $1 == P1 && $2 == P2 && $4 == P4 { print }
-        $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' 
-}
-
-# Function pivotperforms MLST lookup for scheme $1, reading lines from stdin
-# Lines have scheme, gene, allele(s)[*], score
-lookup_mlst() {
-    $GAWK_EXE -bOF "$TAB" -v S="$1" 'BEGIN { OFS=FS }
-            { A[$2] = $2; V[$2] = V[$2] (V[$2]?" ":"") $3 }
-        END { N = asort(A)
-              printf "#Scheme"; for (J=1; J<=N; ++J) printf "%s%s", OFS, A[J];    printf "%s", ORS
-              printf "%s", S;   for (J=1; J<=N; ++J) printf "%s%s", OFS, V[A[J]]; printf "%s", ORS
-            }' |
-    $GAWK_EXE -bO -v LHS_FILE="$(find_tsv "$1")" -f "$(dirname "$0")/join-tables.awk"
-}
-
 # Function to show usage information and exit
 usage_exit() {
     echo "
-Usage: $PROGNAME [OPTIONS] FILE
+Usage: $PROGNAME [OPTIONS] {CONFIG_FILE | DIRECTORY}
 
   Determine species and MLST for the contigs, reads, or plain DNA in FILE.
   FILE must be FASTA, FASTQ, or plain DNA, and may be (g|b|x)zipped.
 
   OPTIONS
-   -c, --cov COV     minimum percentage allele coverage (default $PCT_COVER)
-   -s, --sample N    for reads: sample every N-th read (default 1)
+   -o, --out-dir DIR  Directoru t   minimum percentage allele coverage (default $PCT_COVER)
+   -c, --cge-config C N    for reads: sample every N-th read (default 1)
    -d, --db-dir DIR  path to the database directory
                      (default $DB_DIR)
    -x, --khc KHC     path to the khc binary
@@ -191,5 +143,34 @@ MLST_TSV="$DB_DIR/khc-mlst.tsv"
 maybe_decompress "$FILE" |
 khc_query |
 top_hits
+
+# vim: sts=4:sw=4:et:si:ai
+# Top directory of the MLST database
+MLST_DB_DIR="/data/genomics/cgetools/databases/mlst"
+
+# Extension of the FASTA files
+FASTA_EXT=".fsa"
+
+# Extension of the MLST table files
+TABLE_EXT=".tsv"
+
+# Function to display a warning on standard error
+warn() {
+    echo "$(basename "$0"): warning: $*" >&2
+}
+
+find "$MLST_DB_DIR" -name "*$FASTA_EXT" | while read FSA; do
+
+    SCHEME="$(basename "$FSA" "$FASTA_EXT")"
+    TSV="${FSA%$FASTA_EXT}$TABLE_EXT"
+    [ -f "$TSV" ] || { 
+        warn "ignoring file, no '$TABLE' file for: $FSA"
+        continue
+    }
+
+    uf "$FSA" | awk -v S="$SCHEME" '
+        /^>/ {	match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
+	/^[^>]/'
+done
 
 # vim: sts=4:sw=4:et:si:ai

@@ -1,0 +1,197 @@
+#!/bin/sh
+#
+#  kcst - K-mer counting sequence typer
+#  Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#  Home: https://github.com/zwets/kcst
+
+# Make sure sort and awk run predictably and fast
+export LC_ALL="C"
+
+# Constants
+PROGNAME="$(basename "$0")"
+TAB="$(printf '\t')"
+
+# Defaults
+KHC_EXE="$(realpath "$(dirname "$0")/khc")"
+DB_DIR="$(realpath "$(dirname "$0")/data/cge-db")"
+PCT_COVER=98
+SAMPLE_NTH=1
+
+# Function outputs $* on stderr
+err_msg() {
+    echo "${PROGNAME}: $*" >&2
+}
+
+# Function exits this script with $* on stderr
+err_exit() {
+    err_msg $*
+    exit 1
+}
+
+# Function emits $* on stderr if VERBOSE is set
+dbg_msg() {
+    [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
+}
+
+# Function either un(bxg)zips or cats "$1"
+maybe_decompress() {
+    case "$($FILE_EXE --brief --mime-type "$1")" in
+        application/gzip)    gzip -dc "$1" ;;
+        application/x-xz)    xz -dc "$1" ;;
+        application/x-bzip2) bzip2 -dc "$1" ;;
+        *) cat "$1" ;;
+    esac
+}
+
+# Function locates the TSV for scheme $1
+find_tsv() {
+    local TSV_FILE="$DB_DIR/$1/$1.tsv"
+    [ -f "$TSV_FILE" ] || err_exit "no TSV file for scheme: $1"
+    echo "$TSV_FILE"
+}
+    
+# Function to perform the KHC query; args $* are added to its end.
+# Output is scheme:gene:allele len hit cov
+khc_query() {
+    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" $*
+}
+
+# Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
+# Transforms into tab-separated 'scheme, gene, allele[*], cov', sorted on decreasing cov
+# then keeps only the highest cov line(s) for each gene
+top_hits() {
+    $GAWK_EXE -bO 'BEGIN { OFS="\t" }
+        { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
+    $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
+    $GAWK_EXE -bOF "$TAB" 'BEGIN { OFS=FS }
+        $1 == P1 && $2 == P2 && $4 == P4 { print }
+        $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' 
+}
+
+# Function pivotperforms MLST lookup for scheme $1, reading lines from stdin
+# Lines have scheme, gene, allele(s)[*], score
+lookup_mlst() {
+    $GAWK_EXE -bOF "$TAB" -v S="$1" 'BEGIN { OFS=FS }
+            { A[$2] = $2; V[$2] = V[$2] (V[$2]?" ":"") $3 }
+        END { N = asort(A)
+              printf "#Scheme"; for (J=1; J<=N; ++J) printf "%s%s", OFS, A[J];    printf "%s", ORS
+              printf "%s", S;   for (J=1; J<=N; ++J) printf "%s%s", OFS, V[A[J]]; printf "%s", ORS
+            }' |
+    $GAWK_EXE -bO -v LHS_FILE="$(find_tsv "$1")" -f "$(dirname "$0")/join-tables.awk"
+}
+
+# Function to show usage information and exit
+usage_exit() {
+    echo "
+Usage: $PROGNAME [OPTIONS] FILE
+
+  Determine species and MLST for the contigs, reads, or plain DNA in FILE.
+  FILE must be FASTA, FASTQ, or plain DNA, and may be (g|b|x)zipped.
+
+  OPTIONS
+   -c, --cov COV     minimum percentage allele coverage (default $PCT_COVER)
+   -s, --sample N    for reads: sample every N-th read (default 1)
+   -d, --db-dir DIR  path to the database directory, if not default
+                     (default $DB_DIR)
+   -x, --khc KHC     path to the khc binary, if not in PATH or bin directory
+   -v, --verbose     report progress on stderr
+
+  The program outputs the species and sequence type (if found) corresponding
+  to the combination of top scoring alleles for each gene.  Matches below 100%
+  identity are marked with an asterisk (*).  Matches below COV are ignored.
+
+  When the input is FASTQ, the process can be speeded up by sampling a subset
+  of the reads, at the cost of lower sensitivity.
+
+  $PROGNAME uses the khc binary to do the k-mer counting.  khc must have been
+  compiled and either be on the PATH, or in the same directory with kcst, or
+  specified using the --khc option.
+  
+  Database directory DIR must have been previously set up according to the
+  instructions in README.md.  More information: https://github.com/zwets/kcst.
+" >&2
+    exit ${1:-1}
+}
+
+# Check dependencies
+
+checked_dep() {
+    local EXE="${1:-$(which "$2")}"
+    local VAR="$(echo "CMD_$2" | tr 'a-z' 'A-Z')"
+    [ -x "$EXE" ] && echo "$EXE" || 
+        err_exit "no such executable: $2.\nInstall $2 and/or set $VAR to its location."
+}
+
+export \
+    FILE_EXE="$(checked_dep "$CMD_FILE" 'file')" \
+    GAWK_EXE="$(checked_dep "$CMD_GAWK" 'gawk')" \
+    SORT_EXE="$(checked_dep "$CMD_SORT" 'sort')" \
+    SED_EXE="$(checked_dep "$CMD_SED" 'sed')" \
+    || exit 1
+
+# Parse options
+
+unset VERBOSE
+while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
+    case $1 in
+    --db*=*)      DB_DIR="${1##--db*=}" ;;
+    -d|--db*)     shift || usage_exit; DB_DIR="$1" ;;
+    --cov*=*)     PCT_COVER="${1##--cover*=}" ;;
+    -c|--cov*)    shift || usage_exit; PCT_COVER="$1" ;;
+    --sample=*)   SAMPLE_NTH="${1##--sample=}" ;;
+    -s|--sample)  shift || usage_exit; SAMPLE_NTH="$1" ;;
+    --khc=*)      KHC_EXE="${1##--khc=}" ;;
+    -x|--khc)     shift || usage_exit; KHC_EXE="$1" ;;
+    -v|--verbose) VERBOSE=1 ;;
+    -h|--help)    usage_exit 0 ;;
+    *)            usage_exit ;;
+    esac
+    shift || usage_exit
+done
+
+# Check arguments
+
+[ $# -eq 1 ] || usage_exit
+
+FILE="$1"
+[ -f "$FILE" ] || err_exit "no such file: $FILE"
+
+# Check for KHC
+
+KHC_EXE="${KHC_EXE:-$(which khc 2>/dev/null)}"
+[ -x "$KHC_EXE" ] || err_exit "khc binary not found; compile it and use option -x or PATH"
+
+# Check for database
+
+[ -d "$DB_DIR" ] || err_exit "no such directory (use option -d): $DB_DIR"
+
+MLST_DB="$DB_DIR/mlst.db"
+MLST_CFG="$DB_DIR/mlst.config"
+MLST_TSV="$DB_DIR/mlst.tsv"
+
+[ -f "$MLST_DB" ] || err_exit "database file missing (use option -d): $MLST_DB"
+[ -f "$MLST_CFG" ] || err_exit "database config file missing: $MLST_CFG"
+[ -f "$MLST_TSV" ] || err_exit "database profile table missing: $MLST_TSV"
+[ $# -gt 0 ] || usage_exit
+
+# Do the work
+
+maybe_decompress "$FILE" |
+khc_query |
+top_hits
+
+# vim: sts=4:sw=4:et:si:ai

@@ -17,19 +17,9 @@ MLST schemes at once.
 
 By using a k-mer mapping approach, kcst is very fast.  It typically takes
 about a second to type one assembled genome.  The binary core of `kcst` is
-`khc` (k-mer hit count).  It can be used standalone to rapidly compute
-sequence similarity of a query with each of a set of subject sequences.
-
+`khc` (k-mer hit count).  `khc` can be used standalone to rapidly compute
+sequence similarity between a query and each of a set of subject sequences.
  
-> **Work in Progress**
->
-> 1. The `kcst` wrapper which translates the allele hit scores produced by
-> `khc` to corresponding ST-number(s) is work in progress.
->
-> 2. `khc` accepts reads files (it auto-detects whether input is FASTA, FASTQ,
-> or plain DNA), but until it can do input sampling, querying with reads is
-> obviously much slower than with assemblies.
-
 
 ## Quick Start
 
@@ -72,6 +62,7 @@ GitHub, here are the steps to run it:
 ## Installing
 
 `kcst` has no dependencies or installation requirements.  Just run it.
+You may want to add `kcst` to your PATH for convenience.
 
 
 ## Usage
@@ -83,7 +74,7 @@ _In Progress_
 
 ## Database
 
-_In Progress_
+See `data/README.md`.
 
 
 ---
