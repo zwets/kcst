@@ -104,7 +104,7 @@ Usage: $PROGNAME [OPTIONS] FILE
 
   OPTIONS
    -c, --cov COV     minimum percentage allele coverage (default $PCT_COVER)
-   -s, --sample NTH  for reads: sample only every n-th read (default 1)
+   -s, --sample N    for reads: sample every N-th read (default 1)
    -d, --db-dir DIR  path to the database directory
                      (default $DB_DIR)
    -x, --khc KHC     path to the khc binary
@@ -113,10 +113,10 @@ Usage: $PROGNAME [OPTIONS] FILE
 
   The program outputs the ST (if any) corresponding to the combination of
   top scoring alleles for each gene.  Matches below 100% identity are marked
-  with an asterisk (\*).  Matches below COV are not considered.
+  with an asterisk (*).  Matches below COV are not considered.
 
-  When the input is FASTQ, sampling from the reads will speed up the process,
-  at the cost of lower sensitivity.
+  When the input is FASTQ, enabling sampling will speed up the process, at the
+  cost of lower sensitivity.
 
   $PROGNAME uses the khc binary which must have already been compiled.  The
   database directory DIR must have been set up according to the instructions
