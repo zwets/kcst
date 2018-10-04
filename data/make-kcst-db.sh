@@ -23,89 +23,78 @@ export LC_ALL="C"
 
 # Constants
 PROGNAME="$(basename "$0")"
+MLST_DB="mlst.db"
+MLST_CFG="mlst.cfg"
+MLST_TSV="mlst.tsv"
+FSA_EXT=".fsa"
+TSV_EXT=".tsv"
 TAB="$(printf '\t')"
 
 # Defaults
+OUTPUT_DIR="."
 KHC_EXE="$(realpath "$(dirname "$0")/../bin/khc")"
-DB_DIR="$(realpath "$(dirname "$0")/cge-db")"
 K_SIZE=15
 
-# Function outputs $* on stderr
-err_msg() {
-    echo "${PROGNAME}: $*" >&2
+# Function outputs $* on stderr if VERBOSE is set
+emit() {
+    [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
 # Function exits this script with $* on stderr
 err_exit() {
-    err_msg $*
+    echo "${PROGNAME}: $*"
     exit 1
-}
-
-# Function emits $* on stderr if VERBOSE is set
-dbg_msg() {
-    [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
 # Function to show usage information and exit
 usage_exit() {
     echo "
-Usage: $PROGNAME [OPTIONS] {CONFIG_FILE | DIRECTORY}
+Usage: $PROGNAME [OPTIONS] INPUT_DIR [OUTPUT_DIR]
 
-  Determine species and MLST for the contigs, reads, or plain DNA in FILE.
-  FILE must be FASTA, FASTQ, or plain DNA, and may be (g|b|x)zipped.
+  Compile an MLST database for kcst from the FASTA and TSV files in INPUT_DIR
+  or its subdirectories.  Write the database to OUTPUT_DIR (default PWD).
+  The generated database consists of the files $MLST_DB, $MLST_TSV, $MLST_CFG.
 
   OPTIONS
-   -o, --out-dir DIR  Directoru t   minimum percentage allele coverage (default $PCT_COVER)
-   -c, --cge-config C N    for reads: sample every N-th read (default 1)
-   -d, --db-dir DIR  path to the database directory
-                     (default $DB_DIR)
-   -x, --khc KHC     path to the khc binary
-                     (default $KHC_EXE, or the PATH)
-   -v, --verbose     report progress on stderr
+   -k, --ksize K   Use k-mer size K (default $K_SIZE)
+   -f, --force     Overwrite database files that exist in OUTPUT_DIR
+   --fsa-ext FSA   File extension of FASTA files (default \"$FSA_EXT\")
+   --tsv-ext TSV   File extension of TSV files (default \"$TSV_EXT\")
+   -x, --khc KHC   Path to the khc binary, if not on PATH or in ../bin
+                   (default $KHC_EXE, or searched for on the PATH)
+   -v, --verbose   Report progress on stderr
 
-  The program outputs the ST (if any) corresponding to the combination of
-  top scoring alleles for each gene.  Matches below 100% identity are marked
-  with an asterisk (*).  Matches below COV are not considered.
+  INPUT_DIR must contain a file called \"config\" listing the MLST schemes to
+  include.  Each non-comment line in \"config\" must have three columns:
 
-  When the input is FASTQ, enabling sampling will speed up the process, at the
-  cost of lower sensitivity.
+   1. base name: the name of the $FSA_EXT and $TSV_EXT files, without path or
+      extension; files will be looked for in INPUT_DIR and its subdirectories
+   2. scheme name: the human-readable name for the scheme; usually the species
+      name, or the species and MLST variant (e.g.: A. baumanni (Oxford))
+   3. profile genes: a comma-separated list of the genes in the scheme; these
+      must correspond to column names in the header line of the $TSV_EXT file
 
-  $PROGNAME uses the khc binary which must have already been compiled.  The
-  database directory DIR must have been set up according to the instructions
-  in the README.  For more information, see https://github.com/zwets/kcst.
+  This script validates a number of constraints, such as that every allele in
+  the $FSA_EXT files must be for a gene in the corresponding profile, and every
+  gene column in each $TSV_EXT file must match a gene in the profile.
 " >&2
     exit ${1:-1}
 }
 
-# Check dependencies
-
-checked_dep() {
-    local EXE="${1:-$(which "$2")}"
-    local VAR="$(echo "CMD_$2" | tr 'a-z' 'A-Z')"
-    [ -x "$EXE" ] && echo "$EXE" || 
-        err_exit "no such executable: $2.\nInstall $2 and/or set $VAR to its location."
-}
-
-export \
-    FILE_EXE="$(checked_dep "$CMD_FILE" 'file')" \
-    GAWK_EXE="$(checked_dep "$CMD_GAWK" 'gawk')" \
-    SORT_EXE="$(checked_dep "$CMD_SORT" 'sort')" \
-    SED_EXE="$(checked_dep "$CMD_SED" 'sed')" \
-    || exit 1
-
 # Parse options
 
-unset VERBOSE
+unset FORCE VERBOSE
 while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
     case $1 in
-    --db*=*)      DB_DIR="${1##--db*=}" ;;
-    -d|--db*)     shift || usage_exit; DB_DIR="$1" ;;
-    --cov*=*)     PCT_COVER="${1##--cover*=}" ;;
-    -c|--cov*)    shift || usage_exit; PCT_COVER="$1" ;;
-    --sample=*)   SAMPLE_NTH="${1##--sample=}" ;;
-    -s|--sample)  shift || usage_exit; SAMPLE_NTH="$1" ;;
+    --ksize=*)    K_SIZE="${1##--ksize=}" ;;
+    -k|--ksize)   shift || usage_exit; K_SIZE="$1" ;;
     --khc=*)      KHC_EXE="${1##--khc=}" ;;
     -x|--khc)     shift || usage_exit; KHC_EXE="$1" ;;
+    --fsa*=*)     FSA_EXT="${1##--fsa*=}" ;;
+    --fsa*)       shift || usage_exit; FSA_EXT="$1" ;;
+    --tsv*=*)     TSV_EXT="${1##--tsv*=}" ;;
+    --tsv*)       shift || usage_exit; TSV_EXT="$1" ;;
+    -f|--force)   FORCE=1 ;;
     -v|--verbose) VERBOSE=1 ;;
     -h|--help)    usage_exit 0 ;;
     *)            usage_exit ;;
@@ -115,62 +104,69 @@ done
 
 # Check arguments
 
-[ $# -eq 1 ] || usage_exit
+[ $# -ge 1 ] || usage_exit
 
-FILE="$1"
-[ -f "$FILE" ] || err_exit "no such file: $FILE"
+INPUT_DIR="$1"
+[ -d "$INPUT_DIR" ] || err_exit "no such directory: $INPUT_DIR"
 
-# Check for KHC
+OUTPUT_DIR="${2:-"$OUTPUT_DIR"}"
+[ -d "$OUTPUT_DIR" ] || err_exit "no such directory: $OUTPUT_DIR"
 
-KHC_EXE="${KHC_EXE:-$(which khc 2>/dev/null)}"
-[ -x "$KHC_EXE" ] || err_exit "khc binary not found; compile it and use option -x or PATH"
+CFG_FILE="$INPUT_DIR/config"
+[ -r "$CFG_FILE" ] || err_exit "no config file: $CFG_FILE"
 
-# Check for database
+# Clear existing database
 
-[ -d "$DB_DIR" ] || err_exit "no such directory (use option -d): $DB_DIR"
-
-MLST_DB="$DB_DIR/khc-mlst.db"
-MLST_CFG="$DB_DIR/khc-mlst.config"
-MLST_TSV="$DB_DIR/khc-mlst.tsv"
-
-[ -f "$MLST_DB" ] || err_exit "database file missing (use option -d): $MLST_DB"
-[ -f "$MLST_CFG" ] || err_exit "database config file missing: $MLST_CFG"
-[ -f "$MLST_TSV" ] || err_exit "database profile table missing: $MLST_TSV"
-[ $# -gt 0 ] || usage_exit
-
-# Do the work
-
-maybe_decompress "$FILE" |
-khc_query |
-top_hits
-
-# vim: sts=4:sw=4:et:si:ai
-# Top directory of the MLST database
-MLST_DB_DIR="/data/genomics/cgetools/databases/mlst"
-
-# Extension of the FASTA files
-FASTA_EXT=".fsa"
-
-# Extension of the MLST table files
-TABLE_EXT=".tsv"
-
-# Function to display a warning on standard error
-warn() {
-    echo "$(basename "$0"): warning: $*" >&2
+checked_overwrite() {
+    [ -n "$FORCE" ] || [ ! -f "$1" ] || err_exit "file exists (use -f to overwrite): $1"
+    rm -f "$1"
 }
 
-find "$MLST_DB_DIR" -name "*$FASTA_EXT" | while read FSA; do
+MLST_DB="$OUTPUT_DIR/$MLST_DB"
+MLST_CFG="$OUTPUT_DIR/$MLST_CFG"
+MLST_TSV="$OUTPUT_DIR/$MLST_TSV"
 
-    SCHEME="$(basename "$FSA" "$FASTA_EXT")"
-    TSV="${FSA%$FASTA_EXT}$TABLE_EXT"
-    [ -f "$TSV" ] || { 
-        warn "ignoring file, no '$TABLE' file for: $FSA"
-        continue
-    }
+checked_overwrite "$MLST_DB"
+checked_overwrite "$MLST_CFG"
+checked_overwrite "$MLST_TSV"
 
-    uf "$FSA" | awk -v S="$SCHEME" '
-        /^>/ {	match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
-	/^[^>]/'
-done
+# Check for availability of KHC
+
+KHC_EXE="${KHC_EXE:-"$(which khc 2>/dev/null)"}"
+[ -x "$KHC_EXE" ] || err_exit "khc binary not found; did you compile it?"
+
+# Finally ready to perform the import
+
+emit "processing config file: $CFG_FILE"
+
+grep -E '^[^#]' "$CFG_FILE" | while read SCHEME REST; do
+    
+    FSA_NAME="${SCHEME}${FSA_EXT}"
+    FSA_FILE="$(find "$INPUT_DIR" -name "$FSA_NAME")"
+    [ -f "$FSA_FILE" ] || err_exit "file not found: $FSA_NAME"
+
+    TSV_NAME="${SCHEME}${TSV_EXT}"
+    TSV_FILE="$(find "$INPUT_DIR" -name "$TSV_NAME")"
+    [ -f "$TSV_FILE" ] || err_exit "file not found: $TSV_NAME"
+
+    # MLST_CFG: append the current entry from CFG_FILE
+    echo "${SCHEME}${TAB}${REST}" >> "$MLST_CFG"
+
+    # MLST_TSV: append the TSV_FILE except the header while prefixing a SCHEME column
+    tail -n +2 "$TSV_FILE" | sed -e "s/^/${SCHEME}${TAB}/" >> "$MLST_TSV"
+
+    # MLST_FSA: append the FSA_FILE rewriting sequence headers to ">SCHEME:GENE:ALLELE"
+    awk -v S="$SCHEME" '
+        /^>/     { match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
+        /^[^>]/' "$FSA_FILE" >> "$MLST_DB.TMP"
+done | 
+
+emit "compiling FASTA files to $MLST_DB"
+
+echo | $KHC_EXE ${VERBOSE:+"-v"} -k $K_SIZE -w "$MLST_DB" "$MLST_DB.TMP"
+
+rm -f "$MLST_DB.TMP"
+
+emit "done"
 
 # vim: sts=4:sw=4:et:si:ai
