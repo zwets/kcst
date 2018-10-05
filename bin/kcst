@@ -194,8 +194,10 @@ maybe_decompress "$FILE" |
 khc_query |
 top_hits
 
-echo "That's All (for now) Folks!"
-echo "The mapping from alleles to MLST profile is coming RSN"
+echo
+echo "*** UNDER CONSTRUCTION ***"
+echo "*** The final step (mapping alleles to MLST) will be RSN"
+echo 
 
 exit 0
 

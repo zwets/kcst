@@ -46,14 +46,14 @@ GitHub, here are the steps to run it:
 * Install
 
   There is no need to install khc in a specific place, only that for `kcst`
-  to find it, it must be on PATH or in kcst's bin directory.  The simple and
-  robust way to do this is link src/khc to bin/khc.
+  to find it, `khc` must be on PATH or in kcst's bin directory.  At checkout,
+  the symlink `bin/khc` points to `src/khc`, resolving this requirement.
 
       # Symlink bin/khc to the compile binary src/khc
       cd bin
       ln -sf ../src/khc
 
-      # For convenience below prepend kcst and khc to the PATH
+      # For convenience later prepend the kcst and khc bin directory to PATH
       PATH="$PWD:$PATH"
 
 * Run `khc`
@@ -67,7 +67,7 @@ GitHub, here are the steps to run it:
 
 * Run `kcst`
 
-      # Construct example mini MLST database with just ecoli.fsa
+      # Construct example database with just ecoli.fsa
       cd data/examples
       ../make-db.sh -f "$PWD"  # reads file 'config', writes mlst.*
 
@@ -97,7 +97,7 @@ base maintained by the Centre for Genomic Epidemiology (CGE) at DTU Copenhagen.
 
     # Import the database to kcst's default MLST database directory
     cd data
-    ./make-db.sh -f -v "$CGE_MLST_DIR/config"
+    ./make-db.sh -f -v "$CGE_MLST_DIR"
 
     # Check that the database files are there
     ls  # should list: mlst.config mlst.db mlst.tsv
