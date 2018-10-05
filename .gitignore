@@ -4,7 +4,6 @@ run-all-tests
 *.o
 *.a
 a.out
-*.f?a
 *.bin
 .project
 .cproject

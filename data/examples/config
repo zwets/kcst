@@ -1,0 +1,11 @@
+# Configuration for MLST database
+# Miniature of the MLST database maintained by CGE DTU Copenhagen
+#   https://bitbucket.org/genomicepidemiology/mlst_db
+# Has three tab-separated columns:
+# - base name of the FSA and TSV files containing the alleles and profiles
+#   (make-kcst-db.sh will look for these in this directory and its subdirectories)
+# - name of the MLST scheme, usually species name for species with a single scheme
+# - ordered comma-separated list of the loci names in the scheme's profile
+# base_name    scheme_name    loci_list
+ecoli	Escherichia coli (Achtman)	adk,fumC,gyrB,icd,mdh,purA,recA
+
