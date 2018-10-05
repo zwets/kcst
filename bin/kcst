@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  kcst - K-mer counting sequence typer
+#  kcst - k-mer counting sequence typer
 #  Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -27,7 +27,7 @@ TAB="$(printf '\t')"
 
 # Defaults
 KHC_EXE="$(realpath "$(dirname "$0")/khc")"
-DB_DIR="$(realpath "$(dirname "$0")/data/cge-db")"
+DB_DIR="$(realpath "$(dirname "$0")/../data")"
 PCT_COVER=98
 SAMPLE_NTH=1
 
@@ -103,25 +103,25 @@ Usage: $PROGNAME [OPTIONS] FILE
   FILE must be FASTA, FASTQ, or plain DNA, and may be (g|b|x)zipped.
 
   OPTIONS
-   -c, --cov COV     minimum percentage allele coverage (default $PCT_COVER)
-   -s, --sample N    for reads: sample every N-th read (default 1)
-   -d, --db-dir DIR  path to the database directory, if not default
+   -c, --cov COV     Minimum percentage allele coverage (default $PCT_COVER)
+   -s, --sample N    For fastq files: sample every N-th read (default 1)
+   -d, --dbdir DIR   Path to the kcst MLST database directory (see below)
                      (default $DB_DIR)
-   -x, --khc KHC     path to the khc binary, if not in PATH or bin directory
-   -v, --verbose     report progress on stderr
+   -x, --khc KHC     Path to the khc binary, if not in bin directory or PATH
+   -v, --verbose     Report progress on stderr
 
   The program outputs the species and sequence type (if found) corresponding
   to the combination of top scoring alleles for each gene.  Matches below 100%
   identity are marked with an asterisk (*).  Matches below COV are ignored.
 
-  When the input is FASTQ, the process can be speeded up by sampling a subset
-  of the reads, at the cost of lower sensitivity.
+  When the input is FASTQ, the lookup process can be speeded up by sampling a
+  subset of the reads (--sample), at the cost of lower sensitivity.
 
   $PROGNAME uses the khc binary to do the k-mer counting.  khc must have been
-  compiled and either be on the PATH, or in the same directory with kcst, or
-  specified using the --khc option.
+  compiled and must be either on the PATH, or in the same directory with kcst,
+  or specified with option --khc.
   
-  Database directory DIR must have been previously set up according to the
+  The database directory DIR must have been previously set up according to the
   instructions in README.md.  More information: https://github.com/zwets/kcst.
 " >&2
     exit ${1:-1}
@@ -180,7 +180,7 @@ KHC_EXE="${KHC_EXE:-$(which khc 2>/dev/null)}"
 [ -d "$DB_DIR" ] || err_exit "no such directory (use option -d): $DB_DIR"
 
 MLST_DB="$DB_DIR/mlst.db"
-MLST_CFG="$DB_DIR/mlst.config"
+MLST_CFG="$DB_DIR/mlst.cfg"
 MLST_TSV="$DB_DIR/mlst.tsv"
 
 [ -f "$MLST_DB" ] || err_exit "database file missing (use option -d): $MLST_DB"
@@ -193,5 +193,10 @@ MLST_TSV="$DB_DIR/mlst.tsv"
 maybe_decompress "$FILE" |
 khc_query |
 top_hits
+
+echo "That's All (for now) Folks!"
+echo "The mapping from alleles to MLST profile is coming RSN"
+
+exit 0
 
 # vim: sts=4:sw=4:et:si:ai
