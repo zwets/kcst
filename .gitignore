@@ -8,3 +8,6 @@ a.out
 .project
 .cproject
 .settings
+mlst.db
+mlst.cfg
+mlst.tsv
