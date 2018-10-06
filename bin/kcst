@@ -27,8 +27,8 @@ TAB="$(printf '\t')"
 
 # Defaults
 KHC_EXE="$(realpath "$(dirname "$0")/khc")"
-DB_DIR="$(realpath "$(dirname "$0")/../data")"
-PCT_COVER=98
+DB_DIR="$(realpath "$(dirname "$(realpath "$0")")/../data")"
+PCT_COVER=90
 SAMPLE_NTH=1
 
 # Function outputs $* on stderr
@@ -57,13 +57,6 @@ maybe_decompress() {
     esac
 }
 
-# Function locates the TSV for scheme $1
-find_tsv() {
-    local TSV_FILE="$DB_DIR/$1/$1.tsv"
-    [ -f "$TSV_FILE" ] || err_exit "no TSV file for scheme: $1"
-    echo "$TSV_FILE"
-}
-    
 # Function to perform the KHC query; args $* are added to its end.
 # Output is scheme:gene:allele len hit cov
 khc_query() {
@@ -77,22 +70,63 @@ top_hits() {
     $GAWK_EXE -bO 'BEGIN { OFS="\t" }
         { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
     $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
-    $GAWK_EXE -bOF "$TAB" 'BEGIN { OFS=FS }
+    $GAWK_EXE -bO 'BEGIN { OFS=FS="\t" }
         $1 == P1 && $2 == P2 && $4 == P4 { print }
         $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' 
 }
 
-# Function pivotperforms MLST lookup for scheme $1, reading lines from stdin
-# Lines have scheme, gene, allele(s)[*], score
-lookup_mlst() {
-    $GAWK_EXE -bOF "$TAB" -v S="$1" 'BEGIN { OFS=FS }
-            { A[$2] = $2; V[$2] = V[$2] (V[$2]?" ":"") $3 }
-        END { N = asort(A)
-              printf "#Scheme"; for (J=1; J<=N; ++J) printf "%s%s", OFS, A[J];    printf "%s", ORS
-              printf "%s", S;   for (J=1; J<=N; ++J) printf "%s%s", OFS, V[A[J]]; printf "%s", ORS
-            }' |
-    $GAWK_EXE -bO -v LHS_FILE="$(find_tsv "$1")" -f "$(dirname "$0")/join-tables.awk"
+# Trickiest bit: take sorted list of scheme, gene, allele, cov, and turn into profile(s),
+# then for each profile lookup ST and add it to table that is output
+make_profiles() {
+    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" \
+        --source '
+        BEGIN {
+            FS = OFS = "\t"
+            while (getline <CFG_FILE) { 
+                SCHEME_NAME[$1] = $2
+                SCHEME_LOCI[$1][1]=0; delete SCHEME_LOCI[$1][1]
+                N_SCHEME_LOCI[$1] = split($3, SCHEME_LOCI[$1], ",")
+            }
+            while (getline <TSV_FILE) { 
+                KEY = $1
+                for (I in SCHEME_LOCI[$1]) KEY = KEY "\t" $(I+2)
+                ST_TABLE[KEY "$"] = $2
+            }
+        }
+        {
+            SCHEMES[$1] = $1
+            ALLELES[$1][$2][$3] = $3
+        }
+        END {
+            for (SCHEME in SCHEMES) {
+                N_LOCI = N_SCHEME_LOCI[SCHEME]
+                delete PROFILES
+                profiles_from(1, PROFILES)
+                if (length(PROFILES)) {
+                    printf "#MLST_Scheme" OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
+                    for (PROFILE in PROFILES)
+                        print SCHEME_NAME[SCHEME], lookup_st(SCHEME, PROFILE), PROFILE
+                }
+            }
+        }
+        function profiles_from(I,PS,   AS,LH,RH,RHS)
+        {
+            PS[1] = 0; delete PS[1]  # Make sure is array type
+            if (isarray(ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]))
+                if (I == N_LOCI) 
+                    for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) PS[LH] = LH
+                else {
+                    profiles_from(I+1,RHS)
+                    for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) for (RH in RHS) PS[LH OFS RH] = LH OFS RH
+                }
+        }
+        function lookup_st(S,P) 
+        {
+            ST = ST_TABLE[S "\t" gensub("\\*", "", "g", P) "$"]
+            return (ST ? "ST" ST : "NF") gensub("[^*]","","g",P)
+        }'
 }
+
 
 # Function to show usage information and exit
 usage_exit() {
@@ -170,6 +204,8 @@ done
 FILE="$1"
 [ -f "$FILE" ] || err_exit "no such file: $FILE"
 
+[ $SAMPLE_NTH = 1 ] || err_exit "awww, sorry, read sampling not yet implemented!"
+
 # Check for KHC
 
 KHC_EXE="${KHC_EXE:-$(which khc 2>/dev/null)}"
@@ -192,12 +228,8 @@ MLST_TSV="$DB_DIR/mlst.tsv"
 
 maybe_decompress "$FILE" |
 khc_query |
-top_hits
-
-echo
-echo "*** UNDER CONSTRUCTION ***"
-echo "*** The final step (mapping alleles to MLST) will be RSN"
-echo 
+top_hits |
+make_profiles
 
 exit 0
 
