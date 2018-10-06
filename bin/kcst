@@ -103,7 +103,7 @@ make_profiles() {
                 delete PROFILES
                 profiles_from(1, PROFILES)
                 if (length(PROFILES)) {
-                    printf "#MLST_Scheme" OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
+                    printf "#Species/MLST_Scheme" OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
                     for (PROFILE in PROFILES)
                         print SCHEME_NAME[SCHEME], lookup_st(SCHEME, PROFILE), PROFILE
                 }
