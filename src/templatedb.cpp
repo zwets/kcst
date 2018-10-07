@@ -232,7 +232,7 @@ template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_p
 
         double phit = 100.0 * (double)hits / (double)len;
         if (min_cov_pct < phit)
-            res.push_back({seq_ids_[i], seq_lens_[i], hits, phit});
+            res.push_back({seq_ids_[i], len, hits, phit});
     }
 
     return res;

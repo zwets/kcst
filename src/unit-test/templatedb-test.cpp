@@ -34,16 +34,6 @@ static const char infile_fasta[] = "data/test.templates";
 static const char infile_binary[] = "data/test.templates.bin";
 static const char scratch_fname[] = "data/test.templates.tmp";
 
-static void fill_db(template_db& db)
-{
-}
-
-static bool write_db(const template_db& db)
-{
-    std::ofstream f(scratch_fname);
-    return f.is_open() && db.write(f);
-}
-
 TEST(templatedb_test, read_empty) {
 
     std::ifstream fi(infile_empty);
