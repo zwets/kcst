@@ -1,4 +1,4 @@
-# kcst - kmer-counting sequence typer
+# kcst - k-mer counting sequence typer
 
 `kcst` predicts species and MLST from assembled sequences or raw reads.
 
@@ -31,7 +31,7 @@ GitHub, here are the steps to run it:
   To build `kcst` you need a C++ compiler and GNU `make`.  Run `c++ --version`
   and `make --version` to check that you have these.
 
-  To run `kcst` you need GNU `awk`, which probably is already on your system
+  Running `kcst` requires GNU `awk`, which probably is already on your system
   (try `gawk --version`), or else can be installed via the package manager.
 
 * Build
@@ -45,15 +45,16 @@ GitHub, here are the steps to run it:
 
 * Install
 
-  There is no need to install khc in a specific place, only that for `kcst`
-  to find it, `khc` must be on PATH or in kcst's bin directory.  At checkout,
-  the symlink `bin/khc` points to `src/khc`, resolving this requirement.
+  There is no need to install `khc` in a specific place, only that for `kcst`
+  to find it, `khc` must be on PATH or in kcst's bin directory.
 
-      # Symlink bin/khc to the compile binary src/khc
+      # Symlink bin/khc to the compiled binary src/khc
+      # Note: if you cloned the repository, this link will already be present
       cd bin
       ln -sf ../src/khc
 
-      # For convenience later prepend the kcst and khc bin directory to PATH
+      # For convenience in the steps below, put kcst and khc on the PATH
+      # In directory ./bin
       PATH="$PWD:$PATH"
 
 * Run `khc`
@@ -61,18 +62,18 @@ GitHub, here are the steps to run it:
       # khc has self-contained usage instructions
       khc --help
 
-      # Calculate coverage of sequences in ecoli.fsa by k-mers from test.fa
-      cd data/examples
-      zcat test.fa.gz | khc -k 15 -c 95 -s ecoli.fsa
+      # Example: calculate coverage of ecoli.fsa by k-mers from test.fa
+      cd ../data/examples
+      zcat test.fa.gz | khc -s -k 15 -c 95 ecoli.fsa
 
 * Run `kcst`
 
       # Construct example database with just ecoli.fsa
-      cd data/examples
+      # (Still in data/examples)
       ../make-db.sh -f "$PWD"  # reads file 'config', writes mlst.*
 
-      # Perform MLST on test.fa (still in directory data/examples)
-      kcst -d "$PWD" test.fa.gz
+      # Perform MLST on test.fa against the example database
+      kcst -d "$PWD" test.fa.gz   # Note kcst un(b|g|x)zips transparently
 
 
 ## Installation
@@ -81,49 +82,51 @@ GitHub, here are the steps to run it:
 
 See the Quick Start above.  `kcst` and `khc` do not need to be installed in any
 specific location.  The only requirement is that `kcst` can find `khc` either
-on the PATH or in the directory where `kcst` itself is located.  The symlink
-`bin/khc` to `src/khc` fulfils the latter requirement by default.
+on the PATH or in the directory where `kcst` itself is located.
 
 #### Database
 
-The simplest way to install the MLST database for `kcst` is by cloning the data
-base maintained by the Centre for Genomic Epidemiology (CGE) at DTU Copenhagen.
+You must provide an MLST database for `kcst` to work with.  The simplest way to
+install one is by cloning and importing the database maintained by the Centre
+for Genomic Epidemiology (CGE) at DTU Copenhagen, as follows:
 
-    # Pick a fresh directory to contain the downloadeded CGE database
+    # Pick a directory to contain the downloadeded CGE database
     CGE_MLST_DIR=/your/path/of/choice
 
-    # Clone the CGE git repository having the MLST database
+    # Clone the CGE git repository with the MLST database
     git clone 'https://bitbucket.org/genomicepidemiology/mlst_db.git' "$CGE_MLST_DIR"
 
     # Import the database to kcst's default MLST database directory
     cd data
     ./make-db.sh -f -v "$CGE_MLST_DIR"
 
-    # Check that the database files are there
-    ls  # should list: mlst.config mlst.db mlst.tsv
+    # Check that the three database files have been created
+    ls mlst.*   # should give mlst.db, mlst.cfg, mlst.tsv
 
-    # Test the database with the example E coli assembly (kcst gunzips automatically)
+    # Test the database using the sample assembly
     kcst data/examples/test.fa.gz
 
-You can now remove the `CGE_MLST_DIR`, or keep it around to pull for updates.
+You can now remove `CGE_MLST_DIR`, but you can also keep it around for pulling
+future updates:
 
-    # Update the CGE database to the latest release
-    CGE_MLST_DIR=/path/where/you/cloned/it/before
-    (cd $CGE_MLST_DIR && git pull)
+    # Update the CGE repository to the current release
+    CGE_MLST_DIR=/path/where/you/cloned/it
+    cd $CGE_MLST_DIR
+    git pull
 
-    # Update the kcst import of the database
-    cd data
+    # Reimport the database in kcst's data directory
+    cd data  # the kcst data directory
     ./make-db.sh -f -v "$CGE_MLST_DIR/config"
 
-You can add other databases and use these using `kcst --db DIR`.   Refer to
-`data/README.md` for more information.
+You can use multiple MLST databases with `kcst` (see option `--db`).  Refer to
+`data/README.md` for information about importing MLST databases.
 
 
 ---
 
 #### License
 
-kcst - k-mer-counting sequence typer  
+kcst - k-mer counting sequence typer  
 Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
 
 This program is free software: you can redistribute it and/or modify

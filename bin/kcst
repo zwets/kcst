@@ -161,22 +161,6 @@ Usage: $PROGNAME [OPTIONS] FILE
     exit ${1:-1}
 }
 
-# Check dependencies
-
-checked_dep() {
-    local EXE="${1:-$(which "$2")}"
-    local VAR="$(echo "CMD_$2" | tr 'a-z' 'A-Z')"
-    [ -x "$EXE" ] && echo "$EXE" || 
-        err_exit "no such executable: $2.\nInstall $2 and/or set $VAR to its location."
-}
-
-export \
-    FILE_EXE="$(checked_dep "$CMD_FILE" 'file')" \
-    GAWK_EXE="$(checked_dep "$CMD_GAWK" 'gawk')" \
-    SORT_EXE="$(checked_dep "$CMD_SORT" 'sort')" \
-    SED_EXE="$(checked_dep "$CMD_SED" 'sed')" \
-    || exit 1
-
 # Parse options
 
 unset VERBOSE
@@ -197,6 +181,23 @@ while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
     shift || usage_exit
 done
 
+# Check dependencies
+
+# Functions checks that command '$1' is available, and sets $1_EXE to its path
+check_deps() {
+    while [ $# -gt 0 ]; do
+        local VAR="$(echo "$1_EXE" | tr 'a-z' 'A-Z')"   # VAR = name of environment variable specifying path to $1
+        local EXE="$(eval "echo \$$VAR")"               # EXE = value of VAR = user-specified path to $1
+        local EXE="${EXE:-"$(command -v "$1")"}"        # If it was not set by user, then try the standard lookup
+        [ -x "$EXE" ] && dbg_msg "$VAR = $EXE" || 
+            err_exit "missing requirement: '$1'; either put it on PATH or export $VAR=/path/to/$1."
+        eval "$VAR=$EXE"
+        shift
+    done
+}
+
+check_deps 'file' 'gawk' 'sort'
+
 # Check arguments
 
 [ $# -eq 1 ] || usage_exit
@@ -208,7 +209,7 @@ FILE="$1"
 
 # Check for KHC
 
-KHC_EXE="${KHC_EXE:-$(which khc 2>/dev/null)}"
+KHC_EXE="${KHC_EXE:-"$(command -v khc)"}"
 [ -x "$KHC_EXE" ] || err_exit "khc binary not found; compile it and use option -x or PATH"
 
 # Check for database
