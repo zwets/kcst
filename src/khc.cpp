@@ -36,11 +36,11 @@ static const int MAX_VARS = 1024;
 static const double DEFAULT_COV = 90.0;
 
 static const char USAGE[] = "\n"
-"Usage: khc [OPTIONS] SUBJECTS [QUERY]\n"
+"Usage: khc [OPTIONS] SUBJECTS [QUERY ...]\n"
 "\n"
-"  Compute for each sequence in SUBJECTS its coverage by all k-mers from QUERY.\n"
-"  Report all sequences with minimum COV percent base coverage, in order of\n"
-"  decreasing coverage.\n"
+"  For each QUERY in turn, map all its k-mers on each sequence in SUBJECTS.\n"
+"  Report for each QUERY the sequences from SUBJECTS that had at minimum COV\n"
+"  percent base coverage, in order of decreasing coverage.\n"
 "\n"
 "  OPTIONS\n"
 "   -k KSIZE  k-mer size KSIZE; compulsory unless SUBJECTS was generated with\n"
@@ -51,6 +51,8 @@ static const char USAGE[] = "\n"
 "             that contains degenerate bases\n"
 "   -s        skip k-mers in QUERY that contain degenerate bases (including\n"
 "             N), instead of terminating the program when one is encountered\n"
+"   -t        separate QUERY outputs by a title line '## QUERY NAME' instead\n"
+"             of by an empty line\n"
 "   -w FILE   write an optimised binary representation of SUBJECTS to FILE;\n"
 "             FILE can then be used instead of SUBJECT, with large speed gains\n"
 "   -m MEM    constrain memory use to about MEM GB (default: all minus 2GB)\n"
@@ -64,9 +66,12 @@ static const char USAGE[] = "\n"
 "  generate (-j VARS).  Note how a single N generates 4 k-mer variants, BDHV\n"
 "  generate 3, KMSWRY generate 2, and combinations of these letters multiply.\n"
 "\n"
-"  File QUERY can be FASTA, FASTQ, or plain DNA.  If QUERY is omitted or '-',\n"
-"  it is read from stdin.  QUERY must not have degenerate bases, or option -s\n"
-"  must be set to skip k-mers with a degenerate base.\n"
+"  Each QUERY can be a FASTA, FASTQ, or plain DNA file.  If QUERY is omitted\n"
+"  or '-', it is read from stdin.  QUERY must not have degenerate bases, or\n"
+"  option -s must be set to skip query k-mers with a degenerate base.\n"
+"\n"
+"  The OUTPUT of each QUERY is separated from the preceding QUERY by a single\n"
+"  empty line.  Use option -t to add '## QUERY' title lines.\n"
 "\n";
 
 
@@ -88,6 +93,7 @@ int main (int, char *argv[])
     int max_vars = MAX_VARS;
     double min_cov = DEFAULT_COV;
     bool skip_degens = false;
+    bool write_titles = false;
 
     set_progname("khc");
 
@@ -101,6 +107,9 @@ int main (int, char *argv[])
             }
             else if (!std::strcmp("-s", *argv)) {
                 skip_degens = true;
+            }
+            else if (!std::strcmp("-t", *argv)) {
+                write_titles = true;
             }
             else if (!std::strcmp("-w", *argv) && *++argv) {
                 out_fname = *argv;
@@ -126,23 +135,15 @@ int main (int, char *argv[])
             else if (**argv == '-') {
                 usage_exit();
             }
-            else if (tpl_fname.empty()) {
+            else {
                 tpl_fname = *argv;
                 verbose_emit("database file: %s", tpl_fname.c_str());
+                break;
             }
-            else if (qry_fname.empty()) {
-                qry_fname = *argv;
-                verbose_emit("query file: %s", qry_fname.c_str());
-            }
-            else
-                usage_exit();
         }
 
         if (tpl_fname.empty())
             usage_exit();
-
-        if (qry_fname.empty())
-            qry_fname = "-";
 
             // READ TEMPLATE DB
 
@@ -160,14 +161,30 @@ int main (int, char *argv[])
         if (!out_fname.empty() && !tpldb->write(out_fname))
             raise_error("failed to write binary template file: %s" , out_fname.c_str());
 
-            // PERFORM QUERY
+            // ITERATE OVER QUERY FILES
 
-        query_result res = tpldb->query(qry_fname, min_cov, skip_degens);
+        qry_fname = *(argv+1) ? *++argv : "-";
 
-            // SHOW RESULT
+        bool single_query = !*(argv+1); // when single query we do no newline after results
 
-        for (size_t i = 0; i != res.size(); ++i)
-            std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
+        do {
+            verbose_emit("query file: %s", qry_fname.c_str());
+
+            if (write_titles)
+                std::cout << "## Query: " << qry_fname << std::endl;
+
+            query_result res = tpldb->query(qry_fname, min_cov, skip_degens);
+
+            for (size_t i = 0; i != res.size(); ++i)
+                std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
+
+            if (!single_query && !write_titles)
+                std::cout << std::endl;
+
+            qry_fname = *++argv ? *argv : "";
+
+        } while (!qry_fname.empty());
+
     }
     catch (std::runtime_error e) {
         std::cerr << std::endl << "khc: " << e.what() << std::endl;
