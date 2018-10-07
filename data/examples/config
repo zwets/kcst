@@ -3,9 +3,11 @@
 #   https://bitbucket.org/genomicepidemiology/mlst_db
 # Has three tab-separated columns:
 # - base name of the FSA and TSV files containing the alleles and profiles
-#   (make-kcst-db.sh will look for these in this directory and its subdirectories)
-# - name of the MLST scheme, usually species name for species with a single scheme
-# - ordered comma-separated list of the loci names in the scheme's profile
+#   make-db.sh will look for these in this directory and its subdirectories
+# - name of the MLST scheme; usually species name unless there are multiple
+#   schemes (such as with E coli which has the Achtman and Pasteur schemes)
+# - ordered comma-separated list of the loci names in the scheme's profile;
+#   order must be the same as in the TSV file; TSV's first column must be ST
 # base_name    scheme_name    loci_list
-ecoli	Escherichia coli (Achtman)	adk,fumC,gyrB,icd,mdh,purA,recA
+ecoli	Escherichia spp. (Achtman)	adk,fumC,gyrB,icd,mdh,purA,recA
 
