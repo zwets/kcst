@@ -1,5 +1,5 @@
 /src/khc
-/src/test/run-all-tests
+/src/unit-test/run-all-tests
 *.tmp
 *.o
 *.a
