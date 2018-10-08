@@ -47,7 +47,7 @@ GitHub, here are the steps to run it:
 * Install
 
   There is no need to install `khc` in a specific place, only that for `kcst`
-  to find it, `khc` must be on PATH or in kcst's bin directory.
+  to find it, `khc` must be on PATH or in the same directory as `kcst`.
 
       # Symlink bin/khc to the compiled binary src/khc
       # Note: if you cloned the repository, this link will already be present
@@ -55,7 +55,7 @@ GitHub, here are the steps to run it:
       ln -sf ../src/khc
 
       # For convenience in the steps below, put kcst and khc on the PATH
-      # (While in directory ./bin:)
+      # (While in directory ./bin)
       PATH="$PWD:$PATH"
 
 * Run `khc`
@@ -78,6 +78,9 @@ GitHub, here are the steps to run it:
 
       # Perform MLST of test.fa against the example database
       kcst -d "$PWD" test.fa.gz
+
+      # After you install the default database (see below), this suffices:
+      kcst test.fa.gz
 
 
 ## Installation
@@ -102,13 +105,13 @@ for Genomic Epidemiology (CGE) at DTU Copenhagen, as follows:
 
     # Import the database to kcst's default MLST database directory (./data)
     cd data
-    ./make-db.sh -f -v "$CGE_MLST_DIR"
+    ./make-db.sh -v -f "$CGE_MLST_DIR"
 
     # Check that the three database files have been created
     ls mlst.*   # should give mlst.db, mlst.cfg, mlst.tsv
 
     # Test the database: run MLST on test.fa
-    kcst data/examples/test.fa.gz
+    kcst -v examples/test.fa.gz
 
 You can now remove `CGE_MLST_DIR`, or keep it around for pulling future updates:
 
@@ -117,9 +120,9 @@ You can now remove `CGE_MLST_DIR`, or keep it around for pulling future updates:
     cd $CGE_MLST_DIR
     git pull
 
-    # Reimport the database in kcst's data directory
-    cd data  # the kcst data directory
-    ./make-db.sh -f -v "$CGE_MLST_DIR/config"
+    # Import the database in kcst's data directory
+    cd $(dirname $(realpath $(command -v kcst)))/../data
+    ./make-db.sh -f -v "$CGE_MLST_DIR"
 
 You can use multiple MLST databases with `kcst` (see option `--db`).  Refer to
 `data/README.md` for information about importing MLST databases.

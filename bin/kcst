@@ -31,67 +31,59 @@ DB_DIR="$(realpath "$(dirname "$(realpath "$0")")/../data")"
 PCT_COVER=90
 SAMPLE_NTH=1
 
-# Function outputs $* on stderr
-err_msg() {
-    echo "${PROGNAME}: $*" >&2
-}
-
 # Function exits this script with $* on stderr
 err_exit() {
-    err_msg $*
+    echo "${PROGNAME}: $*" >&2
     exit 1
-}
-
-# Function emits $* on stderr if VERBOSE is set
-dbg_msg() {
-    [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
 # Function to perform the KHC query; args $* are added to its end.
 # Output is scheme:gene:allele len hit cov
 khc_query() {
-    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" "$@"
+    $KHC_EXE ${VERBOSE:+"-v"} -s -c $PCT_COVER "$MLST_DB" "$@"
 }
 
 # Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
-# Transforms into tab-separated 'scheme, gene, allele[*], cov', sorted on decreasing cov
-# then keeps only the highest cov line(s) for each gene
+# Transforms into tab-separated 'scheme, gene, allele[*], cov', sorted on decreasing cov,
+# then keeps only the highest cov line for each gene (can be multiple with same cov)
 top_hits() {
     $GAWK_EXE -bO 'BEGIN { OFS="\t" }
         { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
     $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
     $GAWK_EXE -bO 'BEGIN { OFS=FS="\t" }
         $1 == P1 && $2 == P2 && $4 == P4 { print }
-        $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' 
+        $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }'
 }
 
-# Trickiest bit: take sorted list of scheme, gene, allele, cov, and turn into profile(s),
-# then for each profile lookup ST and add it to table that is output
+# Trickiest bit: take sorted list of top hits per scheme, pivot into profiles, look up ST
+#
 make_profiles() {
     $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_TITLE="$(basename "$QRY_FILE")" \
         --source '
         BEGIN {
             FS = OFS = "\t"
-            while (getline <CFG_FILE) { 
+            while (getline <CFG_FILE) { # read table of scheme names and loci
                 SCHEME_NAME[$1] = $2
                 SCHEME_LOCI[$1][1]=0; delete SCHEME_LOCI[$1][1]
                 N_SCHEME_LOCI[$1] = split($3, SCHEME_LOCI[$1], ",")
             }
-            while (getline <TSV_FILE) { 
+            while (getline <TSV_FILE) { # read table of all profiles (for all schemes)
                 KEY = $1
                 for (I in SCHEME_LOCI[$1]) KEY = KEY "\t" $(I+2)
                 ST_TABLE[KEY "$"] = $2
             }
         }
-        {
+        # EVERY LINE
+        {   # Collect the schemes that apply for this query, and all <scheme,locus,allele> combos
             SCHEMES[$1] = $1
             ALLELES[$1][$2][$3] = $3
         }
-        END {
+        END {   # Now unfold the vertical list of alleles into a list of horizontal profiles
+                # The complexity is that each locus possibly has multiple alleles (so output is a productset)
             for (SCHEME in SCHEMES) {
                 N_LOCI = N_SCHEME_LOCI[SCHEME]
                 delete PROFILES
-                profiles_from(1, PROFILES)
+                profiles_from(1, PROFILES)  # Generates the list of profiles in PROFILES
                 if (length(PROFILES)) {
                     printf "### " QUERY_TITLE OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
                     for (PROFILE in PROFILES)
@@ -99,21 +91,21 @@ make_profiles() {
                 }
             }
         }
-        function profiles_from(I,PS,   AS,LH,RH,RHS)
-        {
-            PS[1] = 0; delete PS[1]  # Make sure is array type
-            if (isarray(ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]))
-                if (I == N_LOCI) 
+        function profiles_from(I,PS,   AS,LH,RH,RHS)  # Recursively generates profile productset for SCHEME
+        {                                             # Maybe best to look the other way, this burns the brain
+            PS[1] = 0; delete PS[1]  # Awk idiom to make sure PS is array type
+            if (isarray(ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]))   # If there are multiple alleles at locus I
+                if (I == N_LOCI)                                    # And we are looking at the rightmost locus
                     for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) PS[LH] = LH
-                else {
-                    profiles_from(I+1,RHS)
+                else {                                              # Else we are looking before rightmost locus
+                    profiles_from(I+1,RHS)                          # So tail recurse and return the set product
                     for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) for (RH in RHS) PS[LH OFS RH] = LH OFS RH
                 }
         }
-        function lookup_st(S,P) 
-        {
-            ST = ST_TABLE[S "\t" gensub("\\*", "", "g", P) "$"]
-            return (ST ? "ST" ST : "NF") gensub("[^*]","","g",P)
+        function lookup_st(S,P) # We turn profile P and scheme S into string "S<tab>P[1]<tab>P[2]<tab>...P[N]$"
+        {                       # Which is just what we used at BEGIN to index into the ST_TABLE
+            ST = ST_TABLE[S "\t" gensub("\\*", "", "g", P) "$"]     # Need to strip the stars out when looking up
+            return (ST ? "ST" ST : "NF") gensub("[^*]","","g",P)    # And copy them onto the ST to mark non-100%
         }'
 }
 
@@ -144,7 +136,7 @@ Usage: $PROGNAME [OPTIONS] FILE
   $PROGNAME uses the khc binary to do the k-mer counting.  khc must have been
   compiled and must be either on the PATH, or in the same directory with kcst,
   or specified with option --khc.
-  
+
   The database directory DIR must have been previously set up according to the
   instructions in README.md.  More information: https://github.com/zwets/kcst.
 " >&2
@@ -179,7 +171,7 @@ check_deps() {
         local VAR="$(echo "$1_EXE" | tr 'a-z' 'A-Z')"   # VAR = name of environment variable specifying path to $1
         local EXE="$(eval "echo \$$VAR")"               # EXE = value of VAR = user-specified path to $1
         local EXE="${EXE:-"$(command -v "$1")"}"        # If it was not set by user, then try the standard lookup
-        [ -x "$EXE" ] && dbg_msg "$VAR = $EXE" || 
+        [ -x "$EXE" ] ||
             err_exit "missing requirement: '$1'; either put it on PATH or export $VAR=/path/to/$1."
         eval "$VAR=$EXE"
         shift
@@ -190,7 +182,7 @@ check_deps 'file' 'gawk' 'sort'
 
 # Check arguments
 
-[ $SAMPLE_NTH = 1 ] || err_exit "awww, sorry, read sampling not yet implemented!"
+[ $SAMPLE_NTH = 1 ] || err_exit "sorry, read sampling to be implemented"
 
 # Check for KHC
 
