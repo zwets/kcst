@@ -29,8 +29,8 @@ GitHub, here are the steps to run it:
 * Install requirements
 
   To build `kcst` you need a C++ compiler and GNU `make`.  Run `c++ --version`
-  and `make --version` to check that you have these.  The gzipped file support
-  requires _Boost IOStreams_ (install the `libboost-iostreams-dev` package).
+  and `make --version` to check that you have these.  Support for gzipped files
+  requires Boost Iostreams (install the `libboost-iostreams-dev` package).
 
   Running `kcst` requires GNU `awk`, which probably is already on your system
   (try `gawk --version`), or else can be installed via the package manager.
@@ -55,7 +55,7 @@ GitHub, here are the steps to run it:
       ln -sf ../src/khc
 
       # For convenience in the steps below, put kcst and khc on the PATH
-      # In directory ./bin
+      # (While in directory ./bin:)
       PATH="$PWD:$PATH"
 
 * Run `khc`
@@ -63,8 +63,11 @@ GitHub, here are the steps to run it:
       # khc has self-contained usage instructions
       khc --help
 
-      # Example: calculate coverage of ecoli.fsa by k-mers from test.fa
+      # Example: calculate coverage of ecoli.fsa by k-mers from test.fa.gz
       cd ../data/examples
+      khc -s -k 15 -c 95 ecoli.fsa test.fa.gz
+
+      # Example: pipe from stdin
       zcat test.fa.gz | khc -s -k 15 -c 95 ecoli.fsa
 
 * Run `kcst`
@@ -73,8 +76,8 @@ GitHub, here are the steps to run it:
       # (Still in data/examples)
       ../make-db.sh -f "$PWD"  # reads file 'config', writes mlst.*
 
-      # Perform MLST on test.fa against the example database
-      kcst -d "$PWD" test.fa.gz   # Note kcst un(b|g|x)zips transparently
+      # Perform MLST of test.fa against the example database
+      kcst -d "$PWD" test.fa.gz
 
 
 ## Installation
@@ -97,18 +100,17 @@ for Genomic Epidemiology (CGE) at DTU Copenhagen, as follows:
     # Clone the CGE git repository with the MLST database
     git clone 'https://bitbucket.org/genomicepidemiology/mlst_db.git' "$CGE_MLST_DIR"
 
-    # Import the database to kcst's default MLST database directory
+    # Import the database to kcst's default MLST database directory (./data)
     cd data
     ./make-db.sh -f -v "$CGE_MLST_DIR"
 
     # Check that the three database files have been created
     ls mlst.*   # should give mlst.db, mlst.cfg, mlst.tsv
 
-    # Test the database using the sample assembly
+    # Test the database: run MLST on test.fa
     kcst data/examples/test.fa.gz
 
-You can now remove `CGE_MLST_DIR`, but you can also keep it around for pulling
-future updates:
+You can now remove `CGE_MLST_DIR`, or keep it around for pulling future updates:
 
     # Update the CGE repository to the current release
     CGE_MLST_DIR=/path/where/you/cloned/it
