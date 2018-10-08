@@ -51,8 +51,7 @@ static const char USAGE[] = "\n"
 "             that contains degenerate bases\n"
 "   -s        skip k-mers in QUERY that contain degenerate bases (including\n"
 "             N), instead of terminating the program when one is encountered\n"
-"   -t        separate QUERY outputs by a title line '## QUERY NAME' instead\n"
-"             of by an empty line\n"
+"   -t        precede QUERY outputs by a title line '## Query: NAME'\n"
 "   -w FILE   write an optimised binary representation of SUBJECTS to FILE;\n"
 "             FILE can then be used instead of SUBJECT, with large speed gains\n"
 "   -m MEM    constrain memory use to about MEM GB (default: all minus 2GB)\n"
@@ -178,7 +177,7 @@ int main (int, char *argv[])
             for (size_t i = 0; i != res.size(); ++i)
                 std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
 
-            if (!single_query && !write_titles)
+            if (!single_query)
                 std::cout << std::endl;
 
             qry_fname = *++argv ? *argv : "";
