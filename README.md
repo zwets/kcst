@@ -29,7 +29,8 @@ GitHub, here are the steps to run it:
 * Install requirements
 
   To build `kcst` you need a C++ compiler and GNU `make`.  Run `c++ --version`
-  and `make --version` to check that you have these.
+  and `make --version` to check that you have these.  The gzipped file support
+  requires _Boost IOStreams_ (install the `libboost-iostreams-dev` package).
 
   Running `kcst` requires GNU `awk`, which probably is already on your system
   (try `gawk --version`), or else can be installed via the package manager.
