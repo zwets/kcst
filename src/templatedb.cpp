@@ -159,7 +159,7 @@ template_db::write(std::ostream& os) const
 bool
 template_db::write(const std::string& filename) const
 {
-    std::ofstream os(filename.c_str());
+    std::ofstream os(filename.c_str(), std::ios_base::out|std::ios_base::binary);
 
     if (!os)
         return false;
@@ -173,12 +173,12 @@ template<typename kmer_db_t>
 query_result
 template_db_impl<kmer_db_t>::query(const std::string& filename, double min_cov_pct, bool skip_degens) const
 {
-    std::ifstream qry_file;
     std::istream* is = &std::cin;
+    std::ifstream qry_file;
 
     if (!filename.empty() && filename != "-")
     {
-        qry_file.open(filename.c_str());
+        qry_file.open(filename.c_str(), std::ios_base::in|std::ios_base::binary);
 
         if (!qry_file)
             raise_error("failed to open query file: %s", filename.c_str());

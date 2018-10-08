@@ -146,7 +146,7 @@ int main (int, char *argv[])
 
             // READ TEMPLATE DB
 
-        std::ifstream tpl_file(tpl_fname);
+        std::ifstream tpl_file(tpl_fname, std::ios_base::in|std::ios_base::binary);
 
         if (!tpl_file)
             raise_error("failed to open template file: %s", tpl_fname.c_str());
