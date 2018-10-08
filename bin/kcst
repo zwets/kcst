@@ -47,20 +47,10 @@ dbg_msg() {
     [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
-# Function either un(bxg)zips or cats "$1"
-maybe_decompress() {
-    case "$($FILE_EXE --brief --mime-type "$1")" in
-        application/gzip)    gzip -dc "$1" ;;
-        application/x-xz)    xz -dc "$1" ;;
-        application/x-bzip2) bzip2 -dc "$1" ;;
-        *) cat "$1" ;;
-    esac
-}
-
 # Function to perform the KHC query; args $* are added to its end.
 # Output is scheme:gene:allele len hit cov
 khc_query() {
-    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" $*
+    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" "$@"
 }
 
 # Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
@@ -227,8 +217,7 @@ MLST_TSV="$DB_DIR/mlst.tsv"
 
 # Do the work
 
-maybe_decompress "$FILE" |
-khc_query |
+khc_query "$FILE" |
 top_hits |
 make_profiles
 
