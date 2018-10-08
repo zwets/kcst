@@ -47,28 +47,36 @@ dbg_msg() {
     [ -z "$VERBOSE" ] || echo "${PROGNAME}: $*" >&2
 }
 
-# Function to perform the KHC query; args $* are added to its end.
-# Output is scheme:gene:allele len hit cov
+# Function to perform the KHC queries; args $@ are added to its end.
+# Output is, for each query, a sequence of lines scheme:gene:allele len hit cov,
+# followed by a newline.
 khc_query() {
-    $KHC_EXE -s -c $PCT_COVER "$MLST_DB" "$@"
+    $KHC_EXE -s -t -c $PCT_COVER "$MLST_DB" "$@"
+    echo "DONE"
 }
 
-# Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
 # Transforms into tab-separated 'scheme, gene, allele[*], cov', sorted on decreasing cov
 # then keeps only the highest cov line(s) for each gene
 top_hits() {
-    $GAWK_EXE -bO 'BEGIN { OFS="\t" }
-        { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
-    $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
-    $GAWK_EXE -bO 'BEGIN { OFS=FS="\t" }
-        $1 == P1 && $2 == P2 && $4 == P4 { print }
-        $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' 
+    while true; do
+        $GAWK_EXE -bO 'BEGIN { OFS="\t" }
+            /^##/    { print }
+            /^$/     { exit }
+            /^DONE$/ { print "~~~DONE~~~"; exit }
+            /^[^#]/  { match($1, "^(.*):(.*):([0-9]+)$", A); print A[1], A[2], A[3] ($4<100.0?"*":""), $4 }' |
+        $SORT_EXE -t "$TAB" -k 1,2 -k 4,4nr |
+        $GAWK_EXE -bO 'BEGIN { OFS=FS="\t" }
+            /^~~~DONE~~~$/ { exit 1 }
+            $1 == P1 && $2 == P2 && $4 == P4 { print }
+            $1 != P1 || $2 != P2 { P1 = $1; P2 = $2; P4 = $4; print }' || break
+        echo
+    done
 }
 
 # Trickiest bit: take sorted list of scheme, gene, allele, cov, and turn into profile(s),
 # then for each profile lookup ST and add it to table that is output
 make_profiles() {
-    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_TITLE="$(basename "$QRY_FILE")" \
+    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" \
         --source '
         BEGIN {
             FS = OFS = "\t"
@@ -83,32 +91,32 @@ make_profiles() {
                 ST_TABLE[KEY "$"] = $2
             }
         }
-        {
+        /^##/   { TITLE = $0 }
+        /^$/    { print_output(TITLE); delete SCHEMES; delete ALLELES; }
+        /^[^#]+/ {
             SCHEMES[$1] = $1
             ALLELES[$1][$2][$3] = $3
         }
         END {
-            for (SCHEME in SCHEMES) {
-                N_LOCI = N_SCHEME_LOCI[SCHEME]
-                delete PROFILES
-                profiles_from(1, PROFILES)
-                if (length(PROFILES)) {
-                    printf "### " QUERY_TITLE OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
-                    for (PROFILE in PROFILES)
-                        print SCHEME_NAME[SCHEME], lookup_st(SCHEME, PROFILE), PROFILE
-                }
+            print_output("Species/MLST_scheme")
+        }
+        function print_output(HDR,   S,P,PS) {
+            for (S in SCHEMES) print_scheme(HDR,S)
+        }
+        function print_scheme(HDR,S,   PS,L,P) {
+            if (profiles_from(S,1,PS)) {
+                printf "#" HDR OFS "ST"; for (L in SCHEME_LOCI[S]) printf OFS SCHEME_LOCI[S][L]; printf ORS
+                for (P in PS) print SCHEME_NAME[S], lookup_st(S, P), P
             }
         }
-        function profiles_from(I,PS,   AS,LH,RH,RHS)
-        {
-            PS[1] = 0; delete PS[1]  # Make sure is array type
-            if (isarray(ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]))
-                if (I == N_LOCI) 
-                    for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) PS[LH] = LH
-                else {
-                    profiles_from(I+1,RHS)
-                    for (LH in ALLELES[SCHEME][SCHEME_LOCI[SCHEME][I]]) for (RH in RHS) PS[LH OFS RH] = LH OFS RH
-                }
+        function profiles_from(S,I,PS,   AS,LH,RH,RHS) {
+            if (! isarray(ALLELES[S][SCHEME_LOCI[S][I]])) 
+                return 0
+            if (I == N_SCHEME_LOCI[S]) 
+                for (LH in ALLELES[S][SCHEME_LOCI[S][I]]) PS[LH] = LH
+            else if (profiles_from(S,I+1,RHS))
+                for (LH in ALLELES[S][SCHEME_LOCI[S][I]]) for (RH in RHS) PS[LH OFS RH] = LH OFS RH
+            return isarray(PS) && length(PS)
         }
         function lookup_st(S,P) 
         {
@@ -121,18 +129,18 @@ make_profiles() {
 # Function to show usage information and exit
 usage_exit() {
     echo "
-Usage: $PROGNAME [OPTIONS] FILE
+Usage: $PROGNAME [OPTIONS] FILE ...
 
-  Determine species and MLST for the contigs, reads, or plain DNA in FILE.
-  FILE must be FASTA, FASTQ, or plain DNA, and may be (g|b|x)zipped.
+  Determine species and MLST for the contigs, reads, or plain DNA in each
+  FILE in turn.  FILE must be FASTA, FASTQ, or DNA, and may be gzipped.
 
   OPTIONS
-   -c, --cov COV     Minimum percentage allele coverage (default $PCT_COVER)
-   -s, --sample N    For fastq files: sample every N-th read (default 1)
-   -d, --dbdir DIR   Path to the kcst MLST database directory (see below)
-                     (default $DB_DIR)
-   -x, --khc KHC     Path to the khc binary, if not in bin directory or PATH
-   -v, --verbose     Report progress on stderr
+   -c, --cov=COV    Minimum percentage allele coverage (default $PCT_COVER)
+   -s, --sample=N   For fastq files: sample every N-th read (default 1)
+   -d, --dbdir=DIR  Path to the kcst MLST database directory (see below)
+                    (default $DB_DIR)
+   -x, --khc=KHC    Path to the khc binary, if not in bin directory or PATH
+   -v, --verbose    Report progress on stderr
 
   The program outputs the species and sequence type (if found) corresponding
   to the combination of top scoring alleles for each gene.  Matches below 100%
@@ -212,13 +220,7 @@ MLST_TSV="$DB_DIR/mlst.tsv"
 
 # Do the work
 
-case $# in
-    0) QRY_FILE="-" ;;
-    1) QRY_FILE="$1" ;;
-    *) usage_exit ;;
-esac
-
-khc_query "$QRY_FILE" |
+khc_query "$@" |
 top_hits |
 make_profiles
 
