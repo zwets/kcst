@@ -22,6 +22,10 @@
 #include <string>
 #include <vector>
 
+#ifndef NO_ZLIB
+#  include <boost/iostreams/filtering_stream.hpp>
+#endif
+
 namespace khc {
 
 
@@ -60,7 +64,11 @@ class sequence_reader {
         enum mode_t { detect, bare, fasta, fastq };
 
     private:
+#ifndef NO_ZLIB
+        boost::iostreams::filtering_istream is_;
+#else
         std::istream &is_;
+#endif
         std::string line_;
         int lineno_;
         mode_t mode_;

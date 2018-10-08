@@ -1,6 +1,7 @@
 TODOs
 
-- Add other wrappers?
 - Use prefix sampling (Ole)
 - Compute identity rather than base coverage
+- Compress the database? (easy now KHC can deal with gzipped queries)
+- Add other wrappers?
 

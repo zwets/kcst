@@ -23,12 +23,32 @@
 #include "seqreader.h"
 #include "utils.h"
 
+#ifndef NO_ZLIB
+#include <boost/iostreams/filter/gzip.hpp>
+#endif
+
 namespace khc {
 
 
+
 sequence_reader::sequence_reader(std::istream &is, mode_t mode)
+#ifdef NO_ZLIB
     : is_(is), lineno_(0), mode_(mode)
 {
+    if (is.peek() == 0x1f)
+        raise_error("no decompression support");
+#else
+    : lineno_(0), mode_(mode)
+{
+    if (is.peek() == 0x1f)
+    {
+        verbose_emit("detected compressed input");
+        is_.push(boost::iostreams::gzip_decompressor());
+    }
+
+    is_.push(is);
+#endif
+
     if (next_line())
     {
         if (mode_ == detect)

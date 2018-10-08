@@ -27,6 +27,7 @@ namespace {
 static const char *fasta_fname = "data/test.fasta";
 static const char *fastq_fname = "data/test.fastq";
 static const char *bare_fname = "data/test.bare";
+static const char *gzip_fname = "data/test.fa.gz";
 
 TEST(seqreader_test, read_fasta) {
 
@@ -75,6 +76,24 @@ TEST(seqreader_test, read_bare) {
     EXPECT_EQ(std::string("(anonymous)"), s.id);
     EXPECT_TRUE(s.header.empty());
     EXPECT_EQ(std::string("BAREData!"), s.data);
+    EXPECT_FALSE(r.next(s));
+}
+
+TEST(seqreader_test, read_gzipped) {
+
+    std::ifstream f;
+    f.open(gzip_fname, std::ios_base::in|std::ios_base::binary);
+    sequence_reader r(f, sequence_reader::fasta);
+    sequence s;
+
+    EXPECT_TRUE(r.next(s));
+    EXPECT_EQ(std::string("1"), s.id);
+    EXPECT_EQ(std::string(">1 First Sequence"), s.header);
+    EXPECT_EQ(std::string("ABC"), s.data);
+    EXPECT_TRUE(r.next(s));
+    EXPECT_EQ(std::string("2"), s.id);
+    EXPECT_EQ(std::string(">2 Second Sequence"), s.header);
+    EXPECT_EQ(std::string("DEF"), s.data);
     EXPECT_FALSE(r.next(s));
 }
 

@@ -36,6 +36,12 @@ USER_OBJS = templatedb.o vectordb.o mapdb.o \
 	kmeriser.o kmerator.o baserator.o \
 	utils.o
 
+ifeq (,$(wildcard /usr/include/boost/iostreams/filter/gzip.hpp))
+  CXXFLAGS += -DNO_GZIP
+else
+  USER_LIBS = -lboost_iostreams
+endif
+
 TEST_OBJS = templatedb-test.o vectordb-test.o mapdb-test.o \
 	seqreader-test.o \
 	kmeriser-test.o kmerator-test.o baserator-test.o
@@ -80,6 +86,6 @@ gtest_main.a : gtest-all.o gtest_main.o
 %-test.o : %-test.cpp $(USER_HEADERS) $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 
-$(TARGET): $(TEST_OBJS) $(USER_OBJS) gtest_main.a
+$(TARGET): $(TEST_OBJS) $(USER_OBJS) gtest_main.a $(USER_LIBS)
 	$(CXX) -pthread $^ -o $@
 

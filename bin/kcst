@@ -68,7 +68,7 @@ top_hits() {
 # Trickiest bit: take sorted list of scheme, gene, allele, cov, and turn into profile(s),
 # then for each profile lookup ST and add it to table that is output
 make_profiles() {
-    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" \
+    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_TITLE="$(basename "$QRY_FILE")" \
         --source '
         BEGIN {
             FS = OFS = "\t"
@@ -93,7 +93,7 @@ make_profiles() {
                 delete PROFILES
                 profiles_from(1, PROFILES)
                 if (length(PROFILES)) {
-                    printf "#Species/MLST_Scheme" OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
+                    printf "### " QUERY_TITLE OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
                     for (PROFILE in PROFILES)
                         print SCHEME_NAME[SCHEME], lookup_st(SCHEME, PROFILE), PROFILE
                 }
@@ -190,11 +190,6 @@ check_deps 'file' 'gawk' 'sort'
 
 # Check arguments
 
-[ $# -eq 1 ] || usage_exit
-
-FILE="$1"
-[ -f "$FILE" ] || err_exit "no such file: $FILE"
-
 [ $SAMPLE_NTH = 1 ] || err_exit "awww, sorry, read sampling not yet implemented!"
 
 # Check for KHC
@@ -217,7 +212,13 @@ MLST_TSV="$DB_DIR/mlst.tsv"
 
 # Do the work
 
-khc_query "$FILE" |
+case $# in
+    0) QRY_FILE="-" ;;
+    1) QRY_FILE="$1" ;;
+    *) usage_exit ;;
+esac
+
+khc_query "$QRY_FILE" |
 top_hits |
 make_profiles
 
