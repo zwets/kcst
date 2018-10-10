@@ -105,7 +105,7 @@ for Genomic Epidemiology (CGE) at DTU Copenhagen, as follows:
 
     # Import the database to kcst's default MLST database directory (./data)
     cd data
-    ./make-db.sh -v -f "$CGE_MLST_DIR"
+    ./make-db.sh -v -f "$CGE_MLST_DIR"  # Note default k-mer size is 15
 
     # Check that the three database files have been created
     ls mlst.*   # should give mlst.db, mlst.cfg, mlst.tsv
@@ -124,7 +124,8 @@ You can now remove `CGE_MLST_DIR`, or keep it around for pulling future updates:
     cd $(dirname $(realpath $(command -v kcst)))/../data
     ./make-db.sh -f -v "$CGE_MLST_DIR"
 
-You can use multiple MLST databases with `kcst` (see option `--db`).  Refer to
+`kcst` can work with multiple separate databases (see option `--db`), for
+instance with different species or k-mer sizes (the default is 15).  Refer to
 `data/README.md` for information about importing MLST databases.
 
 

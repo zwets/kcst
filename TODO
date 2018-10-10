@@ -1,7 +1,8 @@
 TODOs
 
+- Skip subject kmers that exceed the max variants threshold!
+- Compress the database (easy now KHC can deal with gzipped queries)
 - Use prefix sampling (Ole)
 - Compute identity rather than base coverage
-- Compress the database? (easy now KHC can deal with gzipped queries)
-- Add other wrappers?
+- Add other wrappers (resfinder)?
 
