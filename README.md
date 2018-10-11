@@ -2,8 +2,6 @@
 
 `kcst` predicts species and MLST from assembled sequences or raw reads.
 
-Home: <https://github.com/zwets/kcst>
-
 
 ## Introduction
 
@@ -19,6 +17,8 @@ By using a k-mer mapping approach, kcst is very fast.  It typically takes
 about a second to type one assembled genome.  The binary core of `kcst` is
 `khc` (k-mer hit count).  `khc` can be used standalone to rapidly compute
 sequence similarity between a query and a set of subject sequences.
+
+More information: <http://io.zwets.it/kcst>
  
 
 ## Quick Start

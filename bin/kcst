@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Home: https://github.com/zwets/kcst
+#  Home: http://io.zwets.it/kcst
 
 # Make sure sort and awk run predictably and fast
 export LC_ALL="C"
@@ -133,7 +133,7 @@ Usage: $PROGNAME [OPTIONS] FILE
   or specified with option --khc.
 
   The database directory DIR must have been previously set up according to the
-  instructions in README.md.  More information: https://github.com/zwets/kcst.
+  instructions in README.md.  More information: http://io.zwets.it/kcst.
 " >&2
     exit ${1:-1}
 }

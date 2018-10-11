@@ -72,6 +72,8 @@ static const char USAGE[] = "\n"
 "\n"
 "  The OUTPUT of each QUERY is separated from the preceding QUERY by a single\n"
 "  empty line.  Use option -t to add '## QUERY' title lines.\n"
+"\n"
+"  More information: http://io.zwets.it/kcst.\n"
 "\n";
 
 

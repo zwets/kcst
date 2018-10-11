@@ -47,6 +47,14 @@ template_db::create_db(int ksize, int max_vars, int max_gb)
                 " either reduce kmer size, or recompile with a larger kmer_t",
                 ksize, max_ksize, kbits, max_kbits);
 
+        // Note std::vector<kcnt_t> is the element type of the large k-mer lookup vector.
+        // It has 24-byte size, so at k-size 15 we are dealing with 24 * 2^29 = 12GB.
+        // We could reduce memory consumption by introducing an indirection.
+        // Either factor 3 (if we use 64-bit 'pointers'), or 6 (at 32-bit pointers, but
+        // restricting k-mer variety to 4G distinct k-mers).  However, even if this
+        // brings memory at k=15 down to 2G, at k-size 17 it is already back at 32G,
+        // while introducing complexity and the slight indirection performance hit.
+
     kmer_t vec_mb = sizeof(std::vector<kcnt_t>) * (static_cast<std::uintmax_t>(1) << (kbits > 20 ? kbits - 20 : 0));
     kmer_t max_mb = static_cast<std::uintmax_t>(max_gb) << 10;
 

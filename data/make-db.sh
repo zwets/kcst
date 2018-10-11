@@ -16,7 +16,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#  Home: https://github.com/zwets/kcst
+#  Home: http://io.zwets.it/kcst
 
 # Make sure sort and awk run predictably and fast
 export LC_ALL="C"
