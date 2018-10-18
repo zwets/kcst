@@ -90,7 +90,7 @@ make_profiles() {
                     for (PROFILE in PROFILES) {
                         DASHED_PROFILE = gensub(OFS,"-","g",PROFILE)
                         DASHED_LOCI = "";
-                        FIRST=1; for (L in SCHEME_LOCI[SCHEME]) { DASHED_LOCI = DASHED_LOCI (FIRST?"":"-") SCHEME_LOCI[SCHEME][L]; DUD=1 }
+                        FIRST=1; for (L in SCHEME_LOCI[SCHEME]) { DASHED_LOCI = DASHED_LOCI (FIRST?"":"-") SCHEME_LOCI[SCHEME][L]; FIRST=0 }
                         printf QUERY_ID OFS SCHEME_NAME[SCHEME] OFS lookup_st(SCHEME, PROFILE) OFS DASHED_PROFILE OFS DASHED_LOCI OFS PROFILE ORS
                     }
                 }
