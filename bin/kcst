@@ -57,7 +57,10 @@ top_hits() {
 # Trickiest bit: take sorted list of top hits per scheme, pivot into profiles, look up ST
 #
 make_profiles() {
-    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_TITLE="$(basename "$QRY_FILE")" \
+    # Create a QUERY_ID from the QRY_FILE name (strip prefix and suffix)
+    QUERY_ID="$(basename "$QRY_FILE")"
+    QUERY_ID="${QUERY_ID%%.*}"
+    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_ID="$QUERY_ID" \
         --source '
         BEGIN {
             FS = OFS = "\t"
@@ -84,9 +87,12 @@ make_profiles() {
                 delete PROFILES
                 profiles_from(1, PROFILES)  # Generates the list of profiles in PROFILES
                 if (length(PROFILES)) {
-                    printf "### " QUERY_TITLE OFS "ST"; for (L in SCHEME_LOCI[SCHEME]) printf OFS SCHEME_LOCI[SCHEME][L]; printf ORS
-                    for (PROFILE in PROFILES)
-                        print SCHEME_NAME[SCHEME], lookup_st(SCHEME, PROFILE), PROFILE
+                    for (PROFILE in PROFILES) {
+                        DASHED_PROFILE = gensub(OFS,"-","g",PROFILE)
+                        DASHED_LOCI = "";
+                        FIRST=1; for (L in SCHEME_LOCI[SCHEME]) { DASHED_LOCI = DASHED_LOCI (FIRST?"":"-") SCHEME_LOCI[SCHEME][L]; DUD=1 }
+                        printf QUERY_ID OFS SCHEME_NAME[SCHEME] OFS lookup_st(SCHEME, PROFILE) OFS DASHED_PROFILE OFS DASHED_LOCI OFS PROFILE ORS
+                    }
                 }
             }
         }
