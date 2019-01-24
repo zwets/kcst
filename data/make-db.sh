@@ -28,7 +28,6 @@ MLST_CFG="mlst.cfg"
 MLST_TSV="mlst.tsv"
 FSA_EXT=".fsa"
 TSV_EXT=".tsv"
-TAB="$(printf '\t')"
 
 # Defaults
 OUTPUT_DIR="."
@@ -44,6 +43,16 @@ emit() {
 err_exit() {
     echo "${PROGNAME}: $*"
     exit 1
+}
+
+# Function outputs the permutation of space-separated items $2 to obtain $1
+permute_to() {
+    awk -v "SRC=$2" -v "TGT=$1" 'END {
+        N=split(SRC,L1); I=0; while (++I<=N) COL[L1[I]]=I
+        N=split(TGT,L2); I=0; while (++I<=N) 
+            if ((POS=COL[L2[I]]) > 0) RES = RES OFS POS; else exit 1
+        print RES
+    }' /dev/null
 }
 
 # Function to show usage information and exit
@@ -71,7 +80,7 @@ Usage: $PROGNAME [OPTIONS] INPUT_DIR [OUTPUT_DIR]
       extension; files will be looked for in INPUT_DIR and its subdirectories
    2. scheme name: the human-readable name for the scheme; usually the species
       name, or the species and MLST variant (e.g.: A. baumanni (Oxford))
-   3. profile genes: a comma-separated list of the genes in the scheme; these
+   3. profile loci: a comma-separated list of the loci/genes in the scheme;
       must correspond to column names in the header line of the $TSV_EXT file
 
   This script validates a number of constraints, such as that every allele in
@@ -135,28 +144,36 @@ checked_overwrite "$MLST_TSV"
 KHC_EXE="${KHC_EXE:-"$(which khc 2>/dev/null)"}"
 [ -x "$KHC_EXE" ] || err_exit "khc binary not found; did you compile it?"
 
-# Finally ready to perform the import
+# Ready to perform the import
 
 emit "processing config file: $CFG_FILE"
 
-grep -E '^[^#]' "$CFG_FILE" | while read SCHEME REST; do
+grep -E '^[^#]' "$CFG_FILE" | while read BASE REST; do
+
+    LOCI="$(echo "$REST" | cut -f2)"
     
-    FSA_NAME="${SCHEME}${FSA_EXT}"
+    FSA_NAME="${BASE}${FSA_EXT}"
     FSA_FILE="$(find "$INPUT_DIR" -name "$FSA_NAME")"
     [ -f "$FSA_FILE" ] || err_exit "file not found: $FSA_NAME"
 
-    TSV_NAME="${SCHEME}${TSV_EXT}"
+    TSV_NAME="${BASE}${TSV_EXT}"
     TSV_FILE="$(find "$INPUT_DIR" -name "$TSV_NAME")"
     [ -f "$TSV_FILE" ] || err_exit "file not found: $TSV_NAME"
 
     # MLST_CFG: append the current entry from CFG_FILE
-    echo "${SCHEME}${TAB}${REST}" >> "$MLST_CFG"
+    printf "${BASE}\t${REST}\n" >> "$MLST_CFG"
 
-    # MLST_TSV: append the TSV_FILE except the header while prefixing a SCHEME column
-    tail -n +2 "$TSV_FILE" | sed -e "s/^/${SCHEME}${TAB}/" >> "$MLST_TSV"
+    # MLST_TSV: map the TSV column order on that in the config
+    COL_ORDER="$(permute_to "$(echo "$LOCI" | tr ',' ' ')" "$(head -1 "$TSV_FILE" | tr '\t' ' ')")" ||
+        err_exit "$TSV_FILE: header is missing one or more loci from config: $LOCI"
 
-    # MLST_FSA: append the FSA_FILE rewriting sequence headers to ">SCHEME:GENE:ALLELE"
-    awk -v S="$SCHEME" '
+    # ... then use awk to append columnsturn numbers into refs for awk and process TSV_FILE onto MLST_TSV
+    COL_REFS="\$1$(echo "$COL_ORDER" | sed -e 's/ /,\$/g')"
+    awk "BEGIN { OFS=\"\t\" } 
+         NR>1 && NF>1 { print \"${BASE}\",${COL_REFS} }" "$TSV_FILE" >> "$MLST_TSV"
+
+    # MLST_FSA: append the FSA_FILE rewriting sequence headers to ">BASE:GENE:ALLELE"
+    awk -v S="$BASE" '
         /^>/     { match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
         /^[^>]/' "$FSA_FILE" >> "$MLST_DB.TMP"
 done | 
