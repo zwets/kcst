@@ -65,23 +65,22 @@ Usage: $PROGNAME [OPTIONS] INPUT_DIR [OUTPUT_DIR]
   The generated database consists of the files $MLST_DB, $MLST_TSV, $MLST_CFG.
 
   OPTIONS
-   -k, --ksize K   Use k-mer size K (default $K_SIZE)
-   -f, --force     Overwrite database files that exist in OUTPUT_DIR
-   --fsa-ext FSA   File extension of FASTA files (default \"$FSA_EXT\")
-   --tsv-ext TSV   File extension of TSV files (default \"$TSV_EXT\")
-   -x, --khc KHC   Path to the khc binary, if not on PATH or in ../bin
-                   (default $KHC_EXE, or searched for on the PATH)
-   -v, --verbose   Report progress on stderr
+   -k, --ksize KSIZE   Use k-mer size KSIZE (default $K_SIZE)
+   -f, --force         Overwrite database files that exist in OUTPUT_DIR
+   -x, --khc=KHC       Path to the khc binary, if not on PATH or in ../bin
+       --fsa-ext=FSA   File extension of FASTA files (if not \"$FSA_EXT\")
+       --tsv-ext=TSV   File extension of TSV files (if not \"$TSV_EXT\")
+   -v, --verbose       Report progress on stderr
 
   INPUT_DIR must contain a file called \"config\" listing the MLST schemes to
-  include.  Each non-comment line in \"config\" must have three columns:
+  include.  Each non-comment line in \"config\" must have three tab-separated
+  columns (see the example in the source distribution):
 
    1. base name: the name of the $FSA_EXT and $TSV_EXT files, without path or
       extension; files will be looked for in INPUT_DIR and its subdirectories
-   2. scheme name: the human-readable name for the scheme; usually the species
-      name, or the species and MLST variant (e.g.: A. baumanni (Oxford))
-   3. profile loci: a comma-separated list of the loci/genes in the scheme;
-      must correspond to column names in the header line of the $TSV_EXT file
+   2. scheme name: the human-facing name for the scheme; usually species name
+   3. profile loci: comma-separated list of the loci of the scheme; these must
+      correspond to column names in the header line of the $TSV_EXT file
 
   This script validates a number of constraints, such as that every allele in
   the $FSA_EXT files must be for a gene in the corresponding profile, and every

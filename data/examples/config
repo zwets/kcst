@@ -1,19 +1,18 @@
-# Configuration for MLST database
+# Configuration for sample MLST database
 #
 # Miniature of the MLST database maintained by CGE DTU Copenhagen
 #   https://bitbucket.org/genomicepidemiology/mlst_db
 #
-# Has three tab-separated columns:
-# - Base name of the FSA and TSV files containing the alleles and profiles;
-#   make-db.sh will look for these in this directory and its subdirectories.
-#   The TSV file must have a header listing the column names; its first
-#   column must be the sequence type (and may have any column name).
-# - Official name of the MLST scheme; usually species name or species plus
-#   qualifier when there are multiple schemes for a species (as with ecoli).
-# - Comma-separated list of the loci in the scheme's profile; each of these
-#   must match a column header in the TSV file (but not necessarily in the
-#   same order).
+# This config file is read by make-db.sh to determine which schemes go into
+# the generated database, which human-facing scheme names to use, and what
+# the loci-order should be when displaying a profile for the scheme.
 #
-# base_name    scheme_name    loci_list
+# Format: each row specifies a scheme using three tab-separated columns:
+# 1 Base name of the FSA and TSV file pair having the alleles resp. profiles.
+#   make-db.sh will look for these here and in subdirectories.
+# 2 Official "display" name of the MLST scheme.
+# 3 Comma-separated list of loci, in "display" order.  These must match
+#   column headers in the TSV file (where they may be in a different order).
+#
 ecoli	Escherichia spp. (Achtman)	adk,fumC,gyrB,icd,mdh,purA,recA
 

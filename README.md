@@ -64,16 +64,16 @@ GitHub, here are the steps to run it:
       khc --help
 
       # Example: calculate coverage of ecoli.fsa by k-mers from test.fa.gz
-      cd ../data/examples
+      cd data/examples
       khc -s -k 15 -c 95 ecoli.fsa test.fa.gz
 
-      # Example: pipe from stdin
-      zcat test.fa.gz | khc -s -k 15 -c 95 ecoli.fsa
+      # Example: pipe from stdin and sort on coverage
+      zcat test.fa.gz | khc -s -k 15 -c 95 ecoli.fsa | sort -k4,4nr
 
 * Run `kcst`
 
       # Construct example database with just ecoli.fsa
-      # (Still in data/examples)
+      cd data/examples
       ../make-db.sh -f "$PWD"  # reads file 'config', writes mlst.*
 
       # Perform MLST of test.fa against the example database
