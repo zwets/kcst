@@ -36,11 +36,11 @@ static const int DEGEN_BASES[]    = { 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 
 static knum_t
 base_value(char c)
 {
-    int o = c - 'A';
+    unsigned o = c - 'A';
 
-    if (o < 0 || o > 19) {      // outside 'A'..'T'
-        o = c - 'a';            // try 'a'..'t' smallcaps
-        if (o < 0 || o > 19)
+    if (o > 19) {      // outside 'A'..'T' then
+        o = c - 'a';   // try 'a'..'t' lowercase
+        if (o > 19)
             raise_error("invalid base: %c; must be one of [acgtACGT]", c);
     }
 
@@ -56,12 +56,12 @@ base_value(char c)
 static bool
 is_degen_base(char c)
 {
-    int o = c - 'A';
+    unsigned o = c - 'A';
 
-    if (o < 0 || o > 25) {      // outside 'A'..'Z'
-        o = c - 'a';            // try 'a'..'z' smallcaps
-        if (o < 0 || o > 25)    // outside either range then
-            return false;       // by definition not a degenerate base 
+    if (o > 25) {          // outside 'A'..'Z' then
+        o = c - 'a';       // try 'a'..'z' lowercase
+        if (o > 25)        // outside either range then
+            return false;  // by definition not a degenerate base 
     }
 
     return DEGEN_BASES[o];

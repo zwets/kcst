@@ -16,7 +16,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdexcept>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -101,97 +100,90 @@ int main (int, char *argv[])
 
         // PARSE ARGUMENTS
 
-    try {
-        while (*++argv) 
-        {
-            if (!std::strcmp("-v", *argv)) {
-                set_verbose(true);
-            }
-            else if (!std::strcmp("-s", *argv)) {
-                skip_degens = true;
-            }
-            else if (!std::strcmp("-t", *argv)) {
-                write_titles = true;
-            }
-            else if (!std::strcmp("-w", *argv) && *++argv) {
-                out_fname = *argv;
-            }
-            else if (!std::strcmp("-k", *argv) && *++argv) {
-                ksize = std::atoi(*argv);
-                if (ksize < 1 || ksize > MAX_KSIZE) 
-                    raise_error("invalid KSIZE: %s", *argv);
-            }
-            else if (!std::strcmp("-c", *argv) && *++argv) {
-                min_cov = std::atof(*argv);
-            }
-            else if (!std::strcmp("-m", *argv) && *++argv) {
-                max_mem = std::atoi(*argv);
-                if (max_mem < 1)
-                    raise_error("invalid MEM: %s", *argv);
-            }
-            else if (!std::strcmp("-j", *argv) && *++argv) {
-                max_vars = std::atoi(*argv);
-                if (max_vars < 0)
-                    raise_error("invalid VARS: %s", *argv);
-            }
-            else if (**argv == '-') {
-                usage_exit();
-            }
-            else {
-                tpl_fname = *argv;
-                verbose_emit("database file: %s", tpl_fname.c_str());
-                break;
-            }
+    while (*++argv) 
+    {
+        if (!std::strcmp("-v", *argv)) {
+            set_verbose(true);
         }
-
-        if (tpl_fname.empty())
+        else if (!std::strcmp("-s", *argv)) {
+            skip_degens = true;
+        }
+        else if (!std::strcmp("-t", *argv)) {
+            write_titles = true;
+        }
+        else if (!std::strcmp("-w", *argv) && *++argv) {
+            out_fname = *argv;
+        }
+        else if (!std::strcmp("-k", *argv) && *++argv) {
+            ksize = std::atoi(*argv);
+            if (ksize < 1 || ksize > MAX_KSIZE) 
+                raise_error("invalid KSIZE: %s", *argv);
+        }
+        else if (!std::strcmp("-c", *argv) && *++argv) {
+            min_cov = std::atof(*argv);
+        }
+        else if (!std::strcmp("-m", *argv) && *++argv) {
+            max_mem = std::atoi(*argv);
+            if (max_mem < 1)
+                raise_error("invalid MEM: %s", *argv);
+        }
+        else if (!std::strcmp("-j", *argv) && *++argv) {
+            max_vars = std::atoi(*argv);
+            if (max_vars < 0)
+                raise_error("invalid VARS: %s", *argv);
+        }
+        else if (**argv == '-') {
             usage_exit();
-
-            // READ TEMPLATE DB
-
-        std::ifstream tpl_file(tpl_fname, std::ios_base::in|std::ios_base::binary);
-
-        if (!tpl_file)
-            raise_error("failed to open template file: %s", tpl_fname.c_str());
-
-        std::unique_ptr<template_db> tpldb = template_db::read(tpl_file, max_mem, ksize, max_vars);
-
-        tpl_file.close();
-
-            // WRITE TEMPLATE DB
-
-        if (!out_fname.empty() && !tpldb->write(out_fname))
-            raise_error("failed to write binary template file: %s" , out_fname.c_str());
-
-            // ITERATE OVER QUERY FILES
-
-        qry_fname = *(argv+1) ? *++argv : "-";
-
-        bool single_query = !*(argv+1); // when single query we do no newline after results
-
-        do {
-            verbose_emit("query file: %s", qry_fname.c_str());
-
-            if (write_titles)
-                std::cout << "## Query: " << qry_fname << std::endl;
-
-            query_result res = tpldb->query(qry_fname, min_cov, skip_degens);
-
-            for (size_t i = 0; i != res.size(); ++i)
-                std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
-
-            if (!single_query)
-                std::cout << std::endl;
-
-            qry_fname = *++argv ? *argv : "";
-
-        } while (!qry_fname.empty());
-
+        }
+        else {
+            tpl_fname = *argv;
+            verbose_emit("database file: %s", tpl_fname.c_str());
+            break;
+        }
     }
-    catch (std::runtime_error e) {
-        std::cerr << std::endl << "khc: " << e.what() << std::endl;
-        return 1;
-    }
+
+    if (tpl_fname.empty())
+        usage_exit();
+
+        // READ TEMPLATE DB
+
+    std::ifstream tpl_file(tpl_fname, std::ios_base::in|std::ios_base::binary);
+
+    if (!tpl_file)
+        raise_error("failed to open template file: %s", tpl_fname.c_str());
+
+    std::unique_ptr<template_db> tpldb = template_db::read(tpl_file, max_mem, ksize, max_vars);
+
+    tpl_file.close();
+
+        // WRITE TEMPLATE DB
+
+    if (!out_fname.empty() && !tpldb->write(out_fname))
+        raise_error("failed to write binary template file: %s" , out_fname.c_str());
+
+        // ITERATE OVER QUERY FILES
+
+    qry_fname = *(argv+1) ? *++argv : "-";
+
+    bool single_query = !*(argv+1); // when single query we do no newline after results
+
+    do {
+        verbose_emit("query file: %s", qry_fname.c_str());
+
+        if (write_titles)
+            std::cout << "## Query: " << qry_fname << std::endl;
+
+        query_result res = tpldb->query(qry_fname, min_cov, skip_degens);
+
+        for (size_t i = 0; i != res.size(); ++i)
+            std::cout << res[i].seqid << ' ' << res[i].len << ' ' << res[i].hits << ' ' << res[i].phit << std::endl;
+
+        if (!single_query)
+            std::cout << std::endl;
+
+        qry_fname = *++argv ? *argv : "";
+
+    } while (!qry_fname.empty());
 
     return 0;
 }

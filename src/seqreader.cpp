@@ -18,7 +18,6 @@
 
 #include <string>
 #include <cctype>
-#include <stdexcept>
 
 #include "seqreader.h"
 #include "utils.h"
