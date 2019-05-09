@@ -29,9 +29,9 @@
 //
 // Class kmeriser kmerises sequences containing only proper bases (acgtACGT),
 // whereas kmerator additionally accepts degenerate bases (e.g. N, R, and Y),
-// and generates all matching knums for a kmer containing degenerate bases.
+// and generates all matching knums for a k-mer containing degenerate bases.
 //
-// The 'knum_t' representation of a kmer is a number that encodes a sequence
+// The 'knum_t' representation of a k-mer is a number that encodes a sequence
 // of bases by using 2 bits for every base (a=b00, c=b01, g=b10, t=b11), 
 // except the middle base, which is encoded as a single bit: a=b0, c=b1.
 // There is always a middle base, because we enforce ksize to be odd.
@@ -39,7 +39,7 @@
 // Why the single bit for the middle base, and how do we encode g or t?  The
 // trick is that if the middle base is g or t, then we encode the reverse
 // complement of the sequence.  This way we have a 'canonical encoding', so
-// need to match one way only, while also needing half the storage.
+// need to match one way only, while also needing half the k-mer space.
 
 
 namespace khc {

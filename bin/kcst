@@ -151,7 +151,7 @@ while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
     case $1 in
     --db*=*)      DB_DIR="${1##--db*=}" ;;
     -d|--db*)     shift || usage_exit; DB_DIR="$1" ;;
-    --cov*=*)     PCT_COVER="${1##--cover*=}" ;;
+    --cov*=*)     PCT_COVER="${1##--cov*=}" ;;
     -c|--cov*)    shift || usage_exit; PCT_COVER="$1" ;;
     --khc=*)      KHC_EXE="${1##--khc=}" ;;
     -x|--khc)     shift || usage_exit; KHC_EXE="$1" ;;
