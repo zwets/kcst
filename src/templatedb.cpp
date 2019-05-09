@@ -148,7 +148,6 @@ template_db::write(std::ostream& os) const
     for (auto n : seq_lens_)
         nbases += n;
 
-    for (const auto& len : seq_lens_) nbases += len;
     os << MAGIC << W << 
         NSEQ_LABEL << W << seq_ids_.size() << W << 
         NBASES_LABEL << W << nbases << W << 
