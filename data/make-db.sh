@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  make-kcst-db - Create MLST database for kcst
+#  make-db - Create MLST database for kcst
 #  Copyright (C) 2018  Marco van Zwetselaar <io@zwets.it>
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -17,6 +17,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #  Home: http://io.zwets.it/kcst
+
+# Exit on error
+set -e
 
 # Make sure sort and awk run predictably and fast
 export LC_ALL="C"
@@ -41,8 +44,18 @@ emit() {
 
 # Function exits this script with $* on stderr
 err_exit() {
-    echo "${PROGNAME}: $*"
+    echo "${PROGNAME}: $*" >&2
     exit 1
+}
+
+# Function finds single file $2 under directory $1 or errors
+find_file() {
+    [ -d "$1" ] || err_exit "no such directory: $1"
+    local FIND="$(find "$1" -name "$2")" || true
+    [ -n "$FIND" ] || err_exit "file not found below directory $1: $2"
+    local FILE="$(find "$1" -name "$2" | head -1)"
+    [ "$FILE" = "$FIND" ] || echo "WARNING: multiple files for: $2; picking $FILE" >&2
+    echo "$FILE"
 }
 
 # Function outputs the permutation of space-separated items $2 to obtain $1
@@ -151,13 +164,9 @@ grep -E '^[^#]' "$CFG_FILE" | while read BASE REST; do
 
     LOCI="$(echo "$REST" | cut -f2)"
     
-    FSA_NAME="${BASE}${FSA_EXT}"
-    FSA_FILE="$(find "$INPUT_DIR" -name "$FSA_NAME")"
-    [ -f "$FSA_FILE" ] || err_exit "file not found: $FSA_NAME"
-
-    TSV_NAME="${BASE}${TSV_EXT}"
-    TSV_FILE="$(find "$INPUT_DIR" -name "$TSV_NAME")"
-    [ -f "$TSV_FILE" ] || err_exit "file not found: $TSV_NAME"
+    # Locate the FSA and TSV below INPUT_DIR
+    FSA_FILE="$(find_file "$INPUT_DIR" "${BASE}${FSA_EXT}")"
+    TSV_FILE="$(find_file "$INPUT_DIR" "${BASE}${TSV_EXT}")"
 
     # MLST_CFG: append the current entry from CFG_FILE
     printf "${BASE}\t${REST}\n" >> "$MLST_CFG"
@@ -175,7 +184,7 @@ grep -E '^[^#]' "$CFG_FILE" | while read BASE REST; do
     awk -v S="$BASE" '
         /^>/     { match($1,"^>(.*)[^0-9]([0-9]+)( .*)?$",A); print ">" S ":" A[1] ":" A[2] }
         /^[^>]/' "$FSA_FILE" >> "$MLST_DB.TMP"
-done | 
+done
 
 emit "compiling FASTA files to $MLST_DB"
 
