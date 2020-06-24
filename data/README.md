@@ -1,7 +1,7 @@
 # kcst database creation
 
-`kcst` operates on a compiled database of MLST alleles (mlst.db), gene schemas
-(mlst.cfg), and allele profiles (mlst.tsv).  Use the `./make-db.sh` script
+`kcst` operates on a compiled database of MLST alleles (kcst.db), gene schemas
+(kcst.cfg), and allele profiles (kcst.tsv).  Use the `./make-kcst-db.sh` script
 to generate the database.
 
 The simplest way to set this up is to download the MLST database maintained in

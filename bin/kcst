@@ -26,7 +26,6 @@ PROGNAME="$(basename "$0")"
 TAB="$(printf '\t')"
 
 # Defaults
-KHC_EXE="$(realpath "$(dirname "$0")/khc")"
 DB_DIR="$(realpath "$(dirname "$(realpath "$0")")/../data")"
 PCT_COVER=90
 
@@ -60,7 +59,7 @@ make_profiles() {
     # Create a QUERY_ID from the QRY_FILE name (strip prefix and suffix)
     QUERY_ID="$(basename "$QRY_FILE")"
     QUERY_ID="${QUERY_ID%%.*}"
-    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/mlst.cfg" -v TSV_FILE="$DB_DIR/mlst.tsv" -v QUERY_ID="$QUERY_ID" \
+    $GAWK_EXE -bO -v CFG_FILE="$DB_DIR/kcst.cfg" -v TSV_FILE="$DB_DIR/kcst.tsv" -v QUERY_ID="$QUERY_ID" \
         --source '
         BEGIN {
             FS = OFS = "\t"
@@ -176,23 +175,24 @@ check_deps() {
         shift
     done
 }
-
 check_deps 'file' 'gawk' 'sort'
-
-# Check arguments
 
 # Check for KHC
 
-KHC_EXE="${KHC_EXE:-"$(command -v khc)"}"
-[ -x "$KHC_EXE" ] || err_exit "khc binary not found; compile it and use option -x or PATH"
+[ -z "$KHC_EXE" ] || [ -x "$KHC_EXE" ] || err_exit "specified khc not found: $KHC_EXE"
+
+[ -n "$KHC_EXE" ] ||
+    KHC_EXE="$(realpath -e "$(dirname "$0")/khc" 2>/dev/null)" ||
+    KHC_EXE="$(command -v khc 2>/dev/null)" ||
+    err_exit "khc binary not found; did you compile it?"
 
 # Check for database
 
 [ -d "$DB_DIR" ] || err_exit "no such directory (use option -d): $DB_DIR"
 
-MLST_DB="$DB_DIR/mlst.db"
-MLST_CFG="$DB_DIR/mlst.cfg"
-MLST_TSV="$DB_DIR/mlst.tsv"
+MLST_DB="$DB_DIR/kcst.db"
+MLST_CFG="$DB_DIR/kcst.cfg"
+MLST_TSV="$DB_DIR/kcst.tsv"
 
 [ -f "$MLST_DB" ] || err_exit "database file missing (use option -d): $MLST_DB"
 [ -f "$MLST_CFG" ] || err_exit "database config file missing: $MLST_CFG"

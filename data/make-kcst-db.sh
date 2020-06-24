@@ -26,15 +26,14 @@ export LC_ALL="C"
 
 # Constants
 PROGNAME="$(basename "$0")"
-MLST_DB="mlst.db"
-MLST_CFG="mlst.cfg"
-MLST_TSV="mlst.tsv"
+MLST_DB="kcst.db"
+MLST_CFG="kcst.cfg"
+MLST_TSV="kcst.tsv"
 FSA_EXT=".fsa"
 TSV_EXT=".tsv"
 
 # Defaults
 OUTPUT_DIR="."
-KHC_EXE="$(realpath "$(dirname "$0")/../bin/khc")"
 K_SIZE=15
 
 # Function outputs $* on stderr if VERBOSE is set
@@ -136,6 +135,13 @@ OUTPUT_DIR="${2:-"$OUTPUT_DIR"}"
 CFG_FILE="$INPUT_DIR/config"
 [ -r "$CFG_FILE" ] || err_exit "no config file: $CFG_FILE"
 
+[ -z "$KHC_EXE" ] || [ -x "$KHC_EXE" ] || err_exit "specified khc not found: $KHC_EXE"
+
+[ -n "$KHC_EXE" ] || 
+    KHC_EXE="$(realpath -e "$(dirname "$0")/khc" 2>/dev/null)" ||
+    KHC_EXE="$(command -v khc 2>/dev/null)" ||
+    err_exit "khc binary not found; did you compile it?"
+
 # Clear existing database
 
 checked_overwrite() {
@@ -151,10 +157,11 @@ checked_overwrite "$MLST_DB"
 checked_overwrite "$MLST_CFG"
 checked_overwrite "$MLST_TSV"
 
-# Check for availability of KHC
-
-KHC_EXE="${KHC_EXE:-"$(which khc 2>/dev/null)"}"
-[ -x "$KHC_EXE" ] || err_exit "khc binary not found; did you compile it?"
+[ ! -f "$OUTPUT_DIR/mlst.db" ] || printf '
+NOTE: There is an old KCST database (mlst.db) in $OUTPUT_DIR.
+      The new database name is kcst.db, and you can remove the
+      old files: mlst.db, mlst.cfg, mlst.tsv.
+      \n' >&2
 
 # Ready to perform the import
 
