@@ -1,4 +1,4 @@
-CXXFLAGS += -std=c++14 -O3 -DNDEBUG -Wall -Wextra -pedantic -march=native
+CXXFLAGS += -std=c++14 -O3 -DNDEBUG -Wall -Wextra -pedantic #-march=native
 
 OBJS = khc.o templatedb.o seqreader.o vectordb.o mapdb.o kmeriser.o kmerator.o baserator.o utils.o 
 
