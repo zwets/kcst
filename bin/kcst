@@ -27,7 +27,7 @@ TAB="$(printf '\t')"
 
 # Defaults
 DB_DIR="$(realpath "$(dirname "$(realpath "$0")")/../data")"
-PCT_COVER=90
+PCT_COV=90
 
 # Function exits this script with $* on stderr
 err_exit() {
@@ -38,7 +38,7 @@ err_exit() {
 # Function to perform the KHC query; args $* are added to its end.
 # Output is scheme:gene:allele len hit cov
 khc_query() {
-    $KHC_EXE ${VERBOSE:+"-v"} -s -c $PCT_COVER "$MLST_DB" "$@"
+    $KHC_EXE ${VERBOSE:+"-v"} -s -c $PCT_COV "$MLST_DB" "$@"
 }
 
 # Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
@@ -123,7 +123,7 @@ Usage: $PROGNAME [OPTIONS] FILE
   FILE must be FASTA, FASTQ, or plain DNA format, and may be gzip compressed.
 
   OPTIONS
-   -c, --cov=COV    Minimum percentage allele coverage (default $PCT_COVER)
+   -c, --cov=COV    Minimum percentage allele coverage (default $PCT_COV)
    -d, --dbdir=DIR  Path to the kcst MLST database directory (see below)
                     (default $DB_DIR)
    -x, --khc=KHC    Path to the khc binary, if not in bin directory or PATH
@@ -150,8 +150,8 @@ while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
     case $1 in
     --db*=*)      DB_DIR="${1##--db*=}" ;;
     -d|--db*)     shift || usage_exit; DB_DIR="$1" ;;
-    --cov*=*)     PCT_COVER="${1##--cov*=}" ;;
-    -c|--cov*)    shift || usage_exit; PCT_COVER="$1" ;;
+    --cov*=*)     PCT_COV="${1##--cov*=}" ;;
+    -c|--cov*)    shift || usage_exit; PCT_COV="$1" ;;
     --khc=*)      KHC_EXE="${1##--khc=}" ;;
     -x|--khc)     shift || usage_exit; KHC_EXE="$1" ;;
     -v|--verbose) VERBOSE=1 ;;
@@ -163,7 +163,7 @@ done
 
 # Check dependencies
 
-# Functions checks that command '$1' is available, and sets $1_EXE to its path
+# Function checks that command '$1' is available, and sets $1_EXE to its path
 check_deps() {
     while [ $# -gt 0 ]; do
         local VAR="$(echo "$1_EXE" | tr 'a-z' 'A-Z')"   # VAR = name of environment variable specifying path to $1
@@ -198,6 +198,12 @@ MLST_TSV="$DB_DIR/kcst.tsv"
 [ -f "$MLST_CFG" ] || err_exit "database config file missing: $MLST_CFG"
 [ -f "$MLST_TSV" ] || err_exit "database profile table missing: $MLST_TSV"
 [ $# -gt 0 ] || usage_exit
+
+# Sanity check on COV
+
+PCT_COV="$(expr "$PCT_COV" : '^0*\([[:digit:]]\+\)%\?$')" &&
+    [ $PCT_COV -ge 10 ] && [ $PCT_COV -le 100 ] || 
+    err_exit "coverage must be an integral percentage in range [10,100]"
 
 # Do the work
 
