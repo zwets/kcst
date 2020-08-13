@@ -137,8 +137,8 @@ CFG_FILE="$INPUT_DIR/config"
 
 [ -z "$KHC_EXE" ] || [ -x "$KHC_EXE" ] || err_exit "specified khc not found: $KHC_EXE"
 
-[ -n "$KHC_EXE" ] || 
-    KHC_EXE="$(realpath -e "$(dirname "$0")/khc" 2>/dev/null)" ||
+[ -n "$KHC_EXE" ] ||
+    KHC_EXE="$(realpath -e "$(dirname "$0")/../bin/khc" 2>/dev/null)" ||
     KHC_EXE="$(command -v khc 2>/dev/null)" ||
     err_exit "khc binary not found; did you compile it?"
 
