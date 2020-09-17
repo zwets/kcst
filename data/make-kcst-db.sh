@@ -47,12 +47,12 @@ err_exit() {
     exit 1
 }
 
-# Function finds single file $2 under directory $1 or errors
+# Function finds single file in directory $1 or one lower, so $1/$2 or $1/*/$2
 find_file() {
     [ -d "$1" ] || err_exit "no such directory: $1"
-    local FIND="$(find "$1" -name "$2")" || true
+    local FIND="$(find "$1" -maxdepth 2 -name "$2")" || true
     [ -n "$FIND" ] || err_exit "file not found below directory $1: $2"
-    local FILE="$(find "$1" -name "$2" | head -1)"
+    local FILE="$(find "$1" -maxdepth 2 -name "$2" | head -1)"
     [ "$FILE" = "$FIND" ] || echo "WARNING: multiple files for: $2; picking $FILE" >&2
     echo "$FILE"
 }
