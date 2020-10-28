@@ -28,6 +28,7 @@ TAB="$(printf '\t')"
 # Defaults
 DB_DIR="$(realpath "$(dirname "$(realpath "$0")")/../data")"
 PCT_COV=90
+MAX_MEM=""
 
 # Function exits this script with $* on stderr
 err_exit() {
@@ -38,7 +39,7 @@ err_exit() {
 # Function to perform the KHC query; args $* are added to its end.
 # Output is scheme:gene:allele len hit cov
 khc_query() {
-    $KHC_EXE ${VERBOSE:+"-v"} -s -c $PCT_COV "$MLST_DB" "$@"
+    $KHC_EXE ${VERBOSE:+"-v"} -s -c $PCT_COV ${MAX_MEM:+-m} $MAX_MEM "$MLST_DB" "$@"
 }
 
 # Function to process query output, which has 'scheme:gene:allele len hit cov' lines.
@@ -126,6 +127,7 @@ Usage: $PROGNAME [OPTIONS] FILE
    -c, --cov=COV    Minimum percentage allele coverage (default $PCT_COV)
    -d, --dbdir=DIR  Path to the kcst MLST database directory (see below)
                     (default $DB_DIR)
+   -m, --mem=GB     Limit memory consumption to GB (default: khc default)
    -x, --khc=KHC    Path to the khc binary, if not in bin directory or PATH
    -v, --verbose    Report progress on stderr
 
@@ -152,6 +154,8 @@ while [ $# -ne 0 -a "$(expr "$1" : '\(.\)..*')" = "-" ]; do
     -d|--db*)     shift || usage_exit; DB_DIR="$1" ;;
     --cov*=*)     PCT_COV="${1##--cov*=}" ;;
     -c|--cov*)    shift || usage_exit; PCT_COV="$1" ;;
+    --mem*=*)     MAX_MEM="${1##--mem*=}" ;;
+    -m|--mem*)    shift || usage_exit; MAX_MEM="$1" ;;
     --khc=*)      KHC_EXE="${1##--khc=}" ;;
     -x|--khc)     shift || usage_exit; KHC_EXE="$1" ;;
     -v|--verbose) VERBOSE=1 ;;
