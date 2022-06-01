@@ -38,7 +38,6 @@ GitHub, here are the steps to run it:
 * Build
 
       # Compile the khc source code
-      cd src
       make
 
       # Optionally run the unit tests
